@@ -28,20 +28,41 @@ const input = {
   fontFamily: 'inherit'
 };
 
+function loadDraft() {
+  try {
+    return JSON.parse(sessionStorage.getItem('shelved.draft') || 'null') || {};
+  } catch {
+    return {};
+  }
+}
+
 export default function ClosureFlow({ upsert, navigate, notify }) {
-  const [step, setStep] = useState(0);
-  const [name, setName] = useState('');
-  const [goal, setGoal] = useState('');
-  const [doneText, setDoneText] = useState('');
-  const [leftText, setLeftText] = useState('');
-  const [completion, setCompletion] = useState(50);
-  const [reason, setReason] = useState(null);
-  const [reasonNote, setReasonNote] = useState('');
+  const [saved] = useState(loadDraft);
+  const [step, setStep] = useState(saved.step || 0);
+  const [name, setName] = useState(saved.name || '');
+  const [goal, setGoal] = useState(saved.goal || '');
+  const [doneText, setDoneText] = useState(saved.doneText || '');
+  const [leftText, setLeftText] = useState(saved.leftText || '');
+  const [completion, setCompletion] = useState(saved.completion ?? 50);
+  const [reason, setReason] = useState(saved.reason || null);
+  const [reasonNote, setReasonNote] = useState(saved.reasonNote || '');
   const [draft, setDraft] = useState('');
   const [source, setSource] = useState(null);
   const [drafting, setDrafting] = useState(false);
   const startedAt = useRef(Date.now());
   const draftAsked = useRef(false);
+
+  // survive HMR / accidental reloads — your words are never lost
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        'shelved.draft',
+        JSON.stringify({ step, name, goal, doneText, leftText, completion, reason, reasonNote })
+      );
+    } catch {
+      /* sessionStorage unavailable — live with it */
+    }
+  }, [step, name, goal, doneText, leftText, completion, reason, reasonNote]);
 
   // step 4: generate the draft once
   useEffect(() => {
@@ -77,9 +98,25 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
     step === 4;
 
   const next = () => setStep((s) => Math.min(4, s + 1));
-  const back = () => (step === 0 ? navigate('home') : setStep((s) => s - 1));
+  const back = () => {
+    if (step === 0) {
+      try {
+        sessionStorage.removeItem('shelved.draft');
+      } catch {
+        /* ignore */
+      }
+      navigate('home');
+    } else {
+      setStep((s) => s - 1);
+    }
+  };
 
   const approve = () => {
+    try {
+      sessionStorage.removeItem('shelved.draft');
+    } catch {
+      /* ignore */
+    }
     const elapsed = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     const mm = Math.floor(elapsed / 60);
     const ss = String(elapsed % 60).padStart(2, '0');
@@ -129,6 +166,7 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
       <p style={{ fontSize: 11.5, letterSpacing: 3, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
         GUIDED CLOSURE · STEP {step + 1} OF {STEPS.length}
       </p>
+      <div key={step} className="fade-slide-in">
       <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 32, color: 'var(--text)', margin: '8px 0 4px' }}>
         {STEPS[step].q}
       </h1>
@@ -263,12 +301,21 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
               {drafting ? 'reading your answers' : 'editable — you approve the final wording'}
             </span>
           </div>
-          <textarea
-            style={{ ...input, minHeight: 240, resize: 'vertical', lineHeight: 1.55 }}
-            value={drafting ? 'Working through what you recorded…' : draft}
-            readOnly={drafting}
-            onChange={(e) => setDraft(e.target.value)}
-          />
+          {drafting ? (
+            <div className="panel" style={{ padding: 18, display: 'grid', gap: 12 }}>
+              <div className="skeleton" style={{ height: 16, width: '82%' }} />
+              <div className="skeleton" style={{ height: 16, width: '96%' }} />
+              <div className="skeleton" style={{ height: 16, width: '71%' }} />
+              <div className="skeleton" style={{ height: 16, width: '88%' }} />
+              <div className="skeleton" style={{ height: 16, width: '55%' }} />
+            </div>
+          ) : (
+            <textarea
+              style={{ ...input, minHeight: 240, resize: 'vertical', lineHeight: 1.55 }}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          )}
           <div style={{ display: 'flex', gap: 12, marginTop: 18, alignItems: 'center' }}>
             <button className="btn-primary" type="button" onClick={approve} disabled={drafting}>
               Approve & open profile
@@ -279,6 +326,8 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* nav */}
       {step < 4 && (

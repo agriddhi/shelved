@@ -1,20 +1,20 @@
 @import 'tailwindcss';
 
-/* ── Shelved themes v3 — bright & relieving ───────────────────────────
-   dark  = vivid plum page (#500071) + night panels (#290044) +
-           cream/peach text + lime accent + pastel project cards
-   light = airy peach page (#ffe5d9) + cream-white panels + purple ink
-   The five pastels become the project card faces in both themes.      */
+/* ── Shelved themes v4 — lighter, breathable, alive ───────────────────
+   dark  = lifted plum page (#6E1F7C) + deep night panels + cream text
+   light = warm near-white page (#FDFAF6) + pure white panels
+   The five pastels stay the project card faces in both themes.        */
 :root {
-  --bg: #500071;
-  --surface: #290044;
-  --surface-2: #3a0057;
-  --surface-hover: #470066;
-  --border: rgba(255, 255, 255, 0.15);
-  --border-strong: rgba(255, 255, 255, 0.32);
+  --bg: #6e1f7c;
+  --bg-dots: rgba(255, 255, 255, 0.06);
+  --surface: #2c0e38;
+  --surface-2: #40164d;
+  --surface-hover: #511f5c;
+  --border: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.34);
   --text: #eee3b0;
   --body: #ffe5d9;
-  --muted: #f4c8d6;
+  --muted: #f6cdd9;
   --accent: #e3ef4f;
   --accent-2: #5882e8;
   --cta-bg: #e3ef4f;
@@ -27,15 +27,16 @@
 }
 
 :root[data-theme='light'] {
-  --bg: #ffe5d9;
-  --surface: #fbf8f1;
-  --surface-2: #f4efe4;
-  --surface-hover: #ede7da;
-  --border: rgba(41, 0, 68, 0.16);
-  --border-strong: rgba(41, 0, 68, 0.36);
+  --bg: #fdfaf6;
+  --bg-dots: rgba(41, 0, 68, 0.055);
+  --surface: #ffffff;
+  --surface-2: #f3eee6;
+  --surface-hover: #eae4d8;
+  --border: rgba(41, 0, 68, 0.14);
+  --border-strong: rgba(41, 0, 68, 0.32);
   --text: #290044;
-  --body: #43324e;
-  --muted: #7a6470;
+  --body: #4a3556;
+  --muted: #837083;
   --accent: #0f42c0;
   --accent-2: #8a2a78;
   --cta-bg: #1f06ac;
@@ -51,14 +52,80 @@ body,
 
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* subtle dot texture — SVG, not a gradient */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.5' fill='%23ffffff' fill-opacity='0.055'/%3E%3C/svg%3E");
+  background-size: 36px 36px;
   color: var(--body);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+:root[data-theme='light'] body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23290044' fill-opacity='0.05'/%3E%3C/svg%3E");
 }
 
-/* shared bits */
+/* ── motion ─────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(34px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes toastUp {
+  from { opacity: 0; transform: translate(-50%, 18px) scale(0.94); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-9px) rotate(var(--r, 0deg)); }
+}
+@keyframes barGrow {
+  from { width: 0; }
+}
+@keyframes ringPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 239, 79, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(227, 239, 79, 0); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+.fade-up {
+  animation: fadeUp 0.55s cubic-bezier(0.2, 0.75, 0.3, 1) both;
+  animation-delay: var(--d, 0s);
+}
+.fade-slide-in {
+  animation: fadeSlideIn 0.4s cubic-bezier(0.2, 0.75, 0.3, 1) both;
+}
+.pop-in {
+  animation: popIn 0.45s cubic-bezier(0.2, 0.75, 0.3, 1) both;
+}
+.toast-anim {
+  animation: toastUp 0.32s cubic-bezier(0.2, 0.75, 0.3, 1) both;
+}
+.bar-anim {
+  animation: barGrow 0.9s cubic-bezier(0.2, 0.75, 0.3, 1) both;
+}
+.nudge-dot {
+  animation: ringPulse 1.8s ease-in-out infinite;
+}
+.skeleton {
+  background: linear-gradient(110deg, var(--surface-2) 25%, var(--surface-hover) 40%, var(--surface-2) 55%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 12px;
+}
+
+/* ── shared bits ─────────────────────────────────────────── */
 .tag-pill {
   display: inline-flex;
   align-items: center;
@@ -82,9 +149,11 @@ body {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform 0.18s cubic-bezier(0.2, 0.75, 0.3, 1), filter 0.18s ease;
 }
-.btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.btn-primary:hover { filter: brightness(1.07); transform: translateY(-2px); }
+.btn-primary:active { transform: translateY(0) scale(0.96); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
 
 .btn-ghost {
   background: transparent;
@@ -94,8 +163,10 @@ body {
   padding: 12px 24px;
   font-size: 15px;
   cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s cubic-bezier(0.2, 0.75, 0.3, 1);
 }
-.btn-ghost:hover { background: rgba(255, 255, 255, 0.06); }
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.07); transform: translateY(-2px); }
+.btn-ghost:active { transform: scale(0.96); }
 
 .btn-quiet {
   background: var(--surface-2);
@@ -105,8 +176,24 @@ body {
   padding: 10px 18px;
   font-size: 14px;
   cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s cubic-bezier(0.2, 0.75, 0.3, 1);
 }
-.btn-quiet:hover { background: var(--surface-hover); }
+.btn-quiet:hover { background: var(--surface-hover); transform: translateY(-1px); }
+.btn-quiet:active { transform: scale(0.96); }
+
+/* ── project cards — free, scattered, centred ── */
+.project-card {
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.28s cubic-bezier(0.2, 0.75, 0.3, 1);
+  animation: fadeUp 0.6s cubic-bezier(0.2, 0.75, 0.3, 1) both;
+  animation-delay: var(--d, 0s);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+}
+.project-card:hover {
+  transform: rotate(0deg) translateY(-10px) scale(1.03);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  z-index: 2;
+}
 
 .panel {
   background: var(--surface);

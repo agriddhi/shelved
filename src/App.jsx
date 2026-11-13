@@ -156,7 +156,9 @@ export default function App() {
 
       {/* main */}
       <main style={{ flex: 1, minWidth: 0, padding: '40px 46px 90px', position: 'relative' }}>
-        {screen}
+        <div key={view.name + (view.id || '')} className="fade-up" style={{ animationDuration: '.45s' }}>
+          {screen}
+        </div>
 
         <footer
           style={{
@@ -178,11 +180,11 @@ export default function App() {
       {toast && (
         <div
           key={toast.id}
+          className="toast-anim"
           style={{
             position: 'fixed',
             bottom: 26,
             left: '50%',
-            transform: 'translateX(-50%)',
             background: 'var(--cta-bg)',
             color: 'var(--cta-text)',
             borderRadius: 999,

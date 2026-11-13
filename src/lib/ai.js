@@ -6,7 +6,7 @@
  */
 import { draftDescription, aiSuggest } from './drafts.js';
 
-async function callAI(payload, timeout = 2200) {
+async function callAI(payload, timeout = 12000) {
   try {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeout);

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import CardSpread from '../components/CardSpread/CardSpread.jsx';
 import { CARD_FACES, REASONS, reasonLabel, daysIdle, daysSince } from '../lib/store.js';
 
@@ -23,6 +24,24 @@ const chip = (color) => ({
 });
 
 const nightInk = '#290044';
+const TILT = [-3, 2, -2, 3, -1.5, 2.5, -2.5];
+
+function useCountUp(target, duration = 1000) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let raf;
+    const start = performance.now();
+    const tick = (t) => {
+      const p = Math.min(1, (t - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
 
 function ProjectCard({ p, index, onOpen }) {
   const face = CARD_FACES[index % CARD_FACES.length];
@@ -37,7 +56,10 @@ function ProjectCard({ p, index, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen()}
+      className="project-card"
       style={{
+        '--tilt': `${TILT[index % TILT.length]}deg`,
+        '--d': `${index * 0.07}s`,
         textAlign: 'left',
         background: face,
         color: nightInk,
@@ -48,11 +70,9 @@ function ProjectCard({ p, index, onOpen }) {
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
-        minHeight: 176,
-        transition: 'transform .18s ease'
+        width: 242,
+        minHeight: 186
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = 'none')}
     >
       <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span style={chip(REASONS.find((r) => r.key === p.reason)?.color || '#D8E2DC')}>
@@ -80,12 +100,14 @@ function ProjectCard({ p, index, onOpen }) {
           }}
         >
           <span
+            className="bar-anim"
             style={{
               display: 'block',
               height: '100%',
               width: `${p.completion}%`,
               background: '#500071',
-              borderRadius: 6
+              borderRadius: 6,
+              '--d': `${0.25 + index * 0.07}s`
             }}
           />
         </span>
@@ -98,18 +120,19 @@ function ProjectCard({ p, index, onOpen }) {
   );
 }
 
-function Stat({ value, label, hot }) {
+function Stat({ value, label, hot, index }) {
+  const n = useCountUp(typeof value === 'number' ? value : 0, 900 + index * 120);
   return (
-    <div className="panel" style={{ padding: '14px 16px' }}>
+    <div className="panel fade-up" style={{ '--d': `${0.08 + index * 0.08}s`, padding: '16px 18px' }}>
       <div
         style={{
           fontFamily: 'Georgia, serif',
-          fontSize: 25,
+          fontSize: 30,
           fontWeight: 700,
           color: hot ? 'var(--accent)' : 'var(--text)'
         }}
       >
-        {value}
+        {typeof value === 'number' ? n : value}
       </div>
       <div style={{ fontSize: 10.5, letterSpacing: 1.4, color: 'var(--muted)', textTransform: 'uppercase' }}>
         {label}
@@ -133,30 +156,69 @@ export default function Home({ projects, navigate }) {
     : 0;
 
   return (
-    <div>
-      <p style={{ fontSize: 11.5, letterSpacing: 3.2, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
-        YOUR SHELF
-      </p>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 34, color: 'var(--text)', margin: '8px 0 4px' }}>
-        {greeting()}.
-      </h1>
-      <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 24px' }}>
-        {projects.length} projects · {projects.filter((p) => p.status === 'stopped').length} waiting for a decision
-      </p>
+    <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+      {/* hero — centred */}
+      <div style={{ textAlign: 'center', margin: '6px 0 26px' }}>
+        <p
+          className="fade-up"
+          style={{ fontSize: 11.5, letterSpacing: 3.4, color: 'var(--accent)', fontWeight: 700, margin: 0 }}
+        >
+          YOUR SHELF
+        </p>
+        <h1
+          className="fade-up"
+          style={{
+            '--d': '0.05s',
+            fontFamily: 'Georgia, serif',
+            fontSize: 44,
+            lineHeight: 1.1,
+            color: 'var(--text)',
+            margin: '12px 0 10px'
+          }}
+        >
+          {greeting()}. Give it an<br />honest ending.
+        </h1>
+        <p
+          className="fade-up"
+          style={{
+            '--d': '0.14s',
+            color: 'var(--muted)',
+            fontSize: 16,
+            margin: '0 auto',
+            maxWidth: 560
+          }}
+        >
+          {projects.length} projects on the shelf ·{' '}
+          {projects.filter((p) => p.status === 'stopped').length} waiting for a decision. Two minutes to
+          capture what the future you needs.
+        </p>
+        <div
+          className="fade-up"
+          style={{ '--d': '0.22s', display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}
+        >
+          <button className="btn-primary" type="button" onClick={() => navigate('closure')}>
+            + Close a new project
+          </button>
+          <button className="btn-ghost" type="button" onClick={() => navigate('archive')}>
+            Browse the archive →
+          </button>
+        </div>
+      </div>
 
       {/* impact row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 22 }}>
-        <Stat value={revived} label="Revived" hot />
-        <Stat value={archived} label="Archived" />
-        <Stat value={`${avgIdle}d`} label="Avg idle" />
-        <Stat value={projects.length} label="Context cards" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, margin: '0 auto 24px' }}>
+        <Stat value={revived} label="Revived" hot index={0} />
+        <Stat value={archived} label="Archived" index={1} />
+        <Stat value={`${avgIdle}d`} label="Avg idle" index={2} />
+        <Stat value={projects.length} label="Context cards" index={3} />
       </div>
 
       {/* staleness nudge */}
       {nudged && (
         <div
-          className="panel"
+          className="panel fade-up"
           style={{
+            '--d': '0.3s',
             display: 'flex',
             gap: 14,
             alignItems: 'center',
@@ -166,9 +228,10 @@ export default function Home({ projects, navigate }) {
           }}
         >
           <span
+            className="nudge-dot"
             style={{
-              width: 10,
-              height: 10,
+              width: 11,
+              height: 11,
               borderRadius: '50%',
               background: 'var(--accent)',
               flexShrink: 0
@@ -183,7 +246,7 @@ export default function Home({ projects, navigate }) {
           <button
             className="btn-primary"
             type="button"
-            style={{ marginLeft: 'auto', padding: '10px 20px', fontSize: 14 }}
+            style={{ marginLeft: 'auto', padding: '10px 20px', fontSize: 14, flexShrink: 0 }}
             onClick={() => navigate('decision', nudged.id)}
           >
             Decide now
@@ -191,34 +254,25 @@ export default function Home({ projects, navigate }) {
         </div>
       )}
 
-      {/* recently shelved deck + intro */}
+      {/* recently shelved — centred deck */}
       <div
+        className="fade-up"
         style={{
+          '--d': '0.36s',
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 30,
+          gap: 34,
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
+          textAlign: 'center',
           background: 'var(--surface-2)',
           border: '1px solid var(--border)',
-          borderRadius: 18,
-          padding: '10px 30px',
-          marginBottom: 30
+          borderRadius: 20,
+          padding: '22px 30px',
+          marginBottom: 34
         }}
       >
-        <div style={{ flex: '1 1 380px', minWidth: 300 }}>
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700 }}>
-            RECENTLY SHELVED
-          </p>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--text)', margin: '6px 0 8px' }}>
-            Hover the deck. Click a card to open it.
-          </h2>
-          <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0, maxWidth: 520 }}>
-            Five projects, five reasons they stopped — each one carries its full context card.
-            Nothing is ever deleted.
-          </p>
-        </div>
-        <div style={{ flex: '0 0 auto' }}>
+        <div style={{ flex: '0 0 auto', order: 1 }}>
           <CardSpread
             projects={deckProjects.map((p) => ({
               name: p.name,
@@ -232,18 +286,30 @@ export default function Home({ projects, navigate }) {
             }}
           />
         </div>
+        <div style={{ flex: '1 1 320px', maxWidth: 430, order: 2 }}>
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 8px' }}>
+            RECENTLY SHELVED
+          </p>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 25, color: 'var(--text)', margin: '0 0 10px' }}>
+            Good projects don’t die. They drift.
+          </h2>
+          <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
+            Five projects, five honest endings — hover the deck, pick one, and read the context card
+            written at the moment it stopped. Nothing is ever deleted.
+          </p>
+        </div>
       </div>
 
-      {/* project grid */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
-        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: 'var(--text)', margin: 0 }}>
-          All projects
+      {/* on the shelf — free, centred cards */}
+      <div className="fade-up" style={{ '--d': '0.44s', textAlign: 'center', marginBottom: 20 }}>
+        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: 'var(--text)', margin: 0 }}>
+          On the shelf
         </h2>
-        <button className="btn-ghost" type="button" onClick={() => navigate('closure')}>
-          + Close a new project
-        </button>
+        <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: '6px 0 0' }}>
+          Pick any card up — every one carries its full story.
+        </p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22, justifyContent: 'center', padding: '6px 0 10px' }}>
         {sorted.map((p, i) => (
           <ProjectCard key={p.id} p={p} index={i} onOpen={() => navigate('profile', p.id)} />
         ))}

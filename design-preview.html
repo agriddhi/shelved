@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shelved — Design Style Tile</title>
+<style>
+  :root {
+    --bg-top: #0B1020; --bg-bot: #04060F;
+    --accent: #22D3EE; --accent-2: #8B5CF6; --accent-rgb: 34, 211, 238;
+    --text: #F1F5F9; --muted: #9BA7BD; --dim: #64748B;
+    --glass: rgba(255,255,255,.045); --glass-border: rgba(255,255,255,.11);
+    --c-complex: #22D3EE; --c-time: #F59E0B; --c-lost: #EC4899; --c-moved: #8B5CF6;
+    --grad: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  body[data-accent="violet"] { --accent: #A78BFA; --accent-2: #22D3EE; --accent-rgb: 167,139,250; }
+  body[data-accent="amber"]  { --accent: #F59E0B; --accent-2: #EC4899; --accent-rgb: 245,158,11; }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Segoe UI",system-ui,sans-serif; color:var(--text);
+    background:linear-gradient(160deg,var(--bg-top),var(--bg-bot));
+    min-height:100vh; overflow-x:hidden;
+  }
+  /* animated aurora orbs */
+  .orb { position:fixed; border-radius:50%; filter:blur(60px); opacity:.28; z-index:0; animation:drift 42s ease-in-out infinite alternate; }
+  .orb1 { width:520px; height:520px; background:var(--accent); top:-180px; left:-160px; }
+  .orb2 { width:600px; height:600px; background:var(--accent-2); top:-140px; right:-200px; animation-delay:-14s; }
+  .orb3 { width:380px; height:380px; background:#EC4899; bottom:-160px; right:22%; opacity:.14; animation-delay:-28s; }
+  @keyframes drift { from { transform:translate(0,0) scale(1);} to { transform:translate(40px,50px) scale(1.12);} }
+
+  .shell { display:flex; min-height:100vh; position:relative; z-index:1; }
+  /* sidebar */
+  .side { width:230px; padding:26px 16px; background:var(--glass); border-right:1px solid var(--glass-border);
+          backdrop-filter:blur(14px); display:flex; flex-direction:column; gap:6px; }
+  .brand { font-family:Georgia,serif; font-size:24px; font-weight:700; padding:0 10px 22px; }
+  .brand i { color:var(--accent); font-style:normal; }
+  .nav { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:12px; font-size:14.5px;
+         color:var(--muted); cursor:pointer; transition:.22s; }
+  .nav:hover { background:var(--glass); color:var(--text); transform:translateX(3px); }
+  .nav.on { background:rgba(var(--accent-rgb),.13); color:var(--text); box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.4); }
+  .nav .ic { width:22px; text-align:center; font-size:16px; }
+  .side .badge { margin-left:auto; font-size:10.5px; background:var(--grad); color:#04060F; font-weight:700;
+                 padding:2px 7px; border-radius:20px; }
+
+  main { flex:1; padding:34px 42px 60px; max-width:1140px; }
+  /* header row */
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:26px; }
+  .greet h1 { font-family:Georgia,serif; font-size:30px; font-weight:700; }
+  .greet h1 i { color:var(--accent); font-style:normal; }
+  .greet p { color:var(--muted); font-size:14px; margin-top:5px; }
+  .accent-box { display:flex; gap:8px; background:var(--glass); border:1px solid var(--glass-border);
+                padding:8px 12px; border-radius:14px; align-items:center; font-size:12px; color:var(--dim); }
+  .sw { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:.2s; }
+  .sw:hover { transform:scale(1.15); }
+  .sw.on { border-color:#fff; box-shadow:0 0 0 3px rgba(var(--accent-rgb),.35); }
+  .sw.c1 { background:#22D3EE; } .sw.c2 { background:#A78BFA; } .sw.c3 { background:#F59E0B; }
+
+  /* stats */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  .stat { background:var(--glass); border:1px solid var(--glass-border); border-radius:16px; padding:16px 18px;
+          transition:.25s; }
+  .stat:hover { transform:translateY(-4px); border-color:rgba(var(--accent-rgb),.5); }
+  .stat b { font-size:26px; font-family:Georgia,serif; display:block; }
+  .stat span { font-size:11.5px; color:var(--dim); text-transform:uppercase; letter-spacing:1.3px; }
+  .stat.hot b { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  /* nudge */
+  .nudge { display:flex; gap:14px; align-items:center; background:rgba(236,72,153,.08);
+           border:1px solid rgba(236,72,153,.4); border-radius:16px; padding:14px 18px; margin-bottom:24px;
+           animation:pulseGlow 3.2s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100%{box-shadow:0 0 0 0 rgba(236,72,153,0);} 50%{box-shadow:0 0 24px 0 rgba(236,72,153,.22);} }
+  .nudge .dotp { width:10px; height:10px; border-radius:50%; background:#EC4899; box-shadow:0 0 12px #EC4899; }
+  .nudge p { font-size:14px; } .nudge b { color:#FDA4C8; }
+  .nudge .btn { margin-left:auto; }
+
+  /* chips */
+  .chips { display:flex; gap:9px; margin-bottom:18px; flex-wrap:wrap; }
+  .chip { font-size:12.5px; padding:7px 14px; border-radius:30px; border:1px solid var(--glass-border);
+          background:var(--glass); color:var(--muted); cursor:pointer; transition:.2s; }
+  .chip:hover { transform:translateY(-2px); color:var(--text); }
+  .chip.x1 { border-color:rgba(34,211,238,.55); color:#67E8F9; } .chip.x1.on{ background:rgba(34,211,238,.15);}
+  .chip.x2 { border-color:rgba(245,158,11,.55); color:#FBBF24; } .chip.x2.on{ background:rgba(245,158,11,.15);}
+  .chip.x3 { border-color:rgba(236,72,153,.55); color:#F9A8D4; } .chip.x3.on{ background:rgba(236,72,153,.15);}
+  .chip.x4 { border-color:rgba(167,139,250,.55); color:#C4B5FD; } .chip.x4.on{ background:rgba(167,139,250,.15);}
+
+  /* cards */
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .pcard { background:var(--glass); border:1px solid var(--glass-border); border-radius:18px; padding:18px 20px;
+           transition:.25s; animation:rise .5s both; position:relative; overflow:hidden; }
+  .pcard:nth-child(2){animation-delay:.06s}.pcard:nth-child(3){animation-delay:.12s}.pcard:nth-child(4){animation-delay:.18s}
+  @keyframes rise { from { opacity:0; transform:translateY(14px);} to {opacity:1; transform:none;} }
+  .pcard:hover { transform:translateY(-5px); border-color:rgba(var(--accent-rgb),.55);
+                 box-shadow:0 12px 34px -14px rgba(var(--accent-rgb),.45); }
+  .pcard .bar { position:absolute; top:0; left:0; right:0; height:3px; background:var(--grad); opacity:0; transition:.25s; }
+  .pcard:hover .bar { opacity:1; }
+  .pcard h3 { font-family:Georgia,serif; font-size:17.5px; margin-bottom:4px; }
+  .pcard .meta { font-size:12px; color:var(--dim); margin-bottom:12px; }
+  .tag { display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:3px 10px; border-radius:20px;
+         letter-spacing:.4px; }
+  .tag::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .tag.t1 { color:#67E8F9; background:rgba(34,211,238,.12); }
+  .tag.t2 { color:#FBBF24; background:rgba(245,158,11,.12); }
+  .tag.t3 { color:#F9A8D4; background:rgba(236,72,153,.12); }
+  .ring { position:absolute; top:16px; right:18px; width:52px; height:52px; border-radius:50%;
+          display:grid; place-items:center; font-size:12.5px; font-weight:700; }
+  .ring::before { content:""; position:absolute; inset:0; border-radius:50%;
+          background:conic-gradient(var(--accent) calc(var(--p)*1%), rgba(255,255,255,.08) 0);
+          -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0); }
+  .remain { font-size:13px; color:var(--muted); line-height:1.5; }
+
+  /* timeline */
+  .tl { margin-top:26px; background:var(--glass); border:1px solid var(--glass-border); border-radius:18px; padding:20px 24px; }
+  .tl h4 { font-size:12px; letter-spacing:2px; color:var(--accent); margin-bottom:18px; }
+  .track { display:flex; align-items:center; }
+  .node { display:flex; flex-direction:column; align-items:center; gap:8px; font-size:11.5px; color:var(--muted); }
+  .node .d { width:15px; height:15px; border-radius:50%; background:var(--grad); box-shadow:0 0 10px rgba(var(--accent-rgb),.7);
+             animation:pop .4s both; }
+  .node .d.dim { background:#2A3450; box-shadow:none; animation-delay:.3s; }
+  .line { flex:1; height:3px; background:var(--grad); border-radius:3px; margin:0 6px; margin-bottom:22px;
+          animation:grow .6s both; }
+  .line.dim { background:#1C2438; animation-delay:.2s; }
+  @keyframes pop { from{transform:scale(0);} to{transform:scale(1);} }
+  @keyframes grow { from{transform:scaleX(0);} to{transform:scaleX(1);} }
+  .node small { color:var(--dim); font-size:10px; }
+
+  /* buttons */
+  .row { display:flex; gap:12px; margin-top:24px; flex-wrap:wrap; }
+  .btn { font-size:14px; font-weight:600; padding:11px 22px; border-radius:13px; border:1px solid var(--glass-border);
+         background:var(--glass); color:var(--text); cursor:pointer; transition:.22s; }
+  .btn:hover { transform:translateY(-2px); }
+  .btn.pri { background:var(--grad); border:none; color:#05070F; box-shadow:0 8px 24px -8px rgba(var(--accent-rgb),.6); }
+  .btn.pri:hover { filter:brightness(1.1); }
+  .btn.ghost { color:var(--accent); border-color:rgba(var(--accent-rgb),.5); }
+
+  .note { margin-top:30px; font-size:12.5px; color:var(--dim); border-top:1px solid var(--glass-border); padding-top:16px; }
+  .note b { color:var(--muted); }
+  @media (max-width:900px){ .side{display:none} .stats{grid-template-columns:1fr 1fr} .grid{grid-template-columns:1fr} main{padding:22px} }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important} }
+</style>
+</head>
+<body data-accent="cyan">
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">Shelv<i>ed</i></div>
+    <div class="nav on"><span class="ic">⌂</span> Home <span class="badge">3 new</span></div>
+    <div class="nav"><span class="ic">✎</span> Closure flow</div>
+    <div class="nav"><span class="ic">◫</span> Archive</div>
+    <div class="nav"><span class="ic">◈</span> Dashboard</div>
+    <div class="nav"><span class="ic">⚙</span> Settings</div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="greet">
+        <h1>Good evening, <i>Riddhi</i>.</h1>
+        <p>3 projects are waiting · You've preserved 14 projects from context decay</p>
+      </div>
+      <div class="accent-box">accent
+        <span class="sw c1 on" data-a="cyan"></span>
+        <span class="sw c2" data-a="violet"></span>
+        <span class="sw c3" data-a="amber"></span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat hot"><b>2</b><span>Revived</span></div>
+      <div class="stat"><b>5</b><span>Archived</span></div>
+      <div class="stat"><b>14d</b><span>Avg idle</span></div>
+      <div class="stat"><b>1m 52s</b><span>Avg capture</span></div>
+    </div>
+
+    <div class="nudge">
+      <span class="dotp"></span>
+      <p><b>Your study planner has been paused 34 days.</b> Still worth it? Capture where it stands — or let it go with a reason.</p>
+      <button class="btn pri">Decide</button>
+    </div>
+
+    <div class="chips">
+      <span class="chip on">All · 8</span>
+      <span class="chip x1 on">Too complex · 3</span>
+      <span class="chip x2">No time · 2</span>
+      <span class="chip x3">Lost interest · 2</span>
+      <span class="chip x4">Moved on · 1</span>
+    </div>
+
+    <div class="grid">
+      <div class="pcard"><div class="bar"></div>
+        <div class="ring" style="--p:60">60%</div>
+        <h3>Study Planner</h3>
+        <div class="meta">Paused 34 days ago · reopened 1× </div>
+        <span class="tag t2">No time</span>
+        <p class="remain" style="margin-top:12px">✓ Auth · dashboard &nbsp;&nbsp; ○ Calendar sync, reminders</p>
+      </div>
+      <div class="pcard"><div class="bar"></div>
+        <div class="ring" style="--p:85">85%</div>
+        <h3>ML Notes Search</h3>
+        <div class="meta">Paused 8 days ago</div>
+        <span class="tag t1">Too complex</span>
+        <p class="remain" style="margin-top:12px">✓ Indexing · UI &nbsp;&nbsp; ○ Vector backend, deploy</p>
+      </div>
+      <div class="pcard"><div class="bar"></div>
+        <div class="ring" style="--p:35">35%</div>
+        <h3>Game Jam — "Lumen"</h3>
+        <div class="meta">Paused 3 days ago</div>
+        <span class="tag t3">Lost interest</span>
+        <p class="remain" style="margin-top:12px">✓ Sprite engine &nbsp;&nbsp; ○ Levels, sound, scoring</p>
+      </div>
+      <div class="pcard"><div class="bar"></div>
+        <div class="ring" style="--p:70">70%</div>
+        <h3>Dev Blog</h3>
+        <div class="meta">Revived yesterday 🎉</div>
+        <span class="tag t4" style="color:#C4B5FD;background:rgba(167,139,250,.12)">Moved on</span>
+        <p class="remain" style="margin-top:12px">✓ CMS · 4 articles &nbsp;&nbsp; ○ RSS, comments</p>
+      </div>
+    </div>
+
+    <div class="tl">
+      <h4>AUTOMATIC TIMELINE</h4>
+      <div class="track">
+        <div class="node"><span class="d"></span>Started<small>Feb 3</small></div>
+        <div class="line"></div>
+        <div class="node"><span class="d"></span>Milestone<small>Feb 18</small></div>
+        <div class="line"></div>
+        <div class="node"><span class="d"></span>Last touched<small>Mar 2</small></div>
+        <div class="line"></div>
+        <div class="node"><span class="d"></span>Closed<small>Mar 3</small></div>
+        <div class="line dim"></div>
+        <div class="node"><span class="d dim"></span>Revisited<small>—</small></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn pri">Start 2-minute closure</button>
+      <button class="btn ghost">Export README</button>
+      <button class="btn">Copy as Markdown</button>
+    </div>
+
+    <p class="note"><b>Try it:</b> click the accent swatches top-right (cyan / violet / amber) · hover cards & chips · watch the aurora drift. Your data never leaves this device.</p>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.sw').forEach(s => s.onclick = () => {
+    document.body.dataset.accent = s.dataset.a;
+    document.querySelectorAll('.sw').forEach(x => x.classList.toggle('on', x === s));
+  });
+  document.querySelectorAll('.chip').forEach(c => c.onclick = () => c.classList.toggle('on'));
+  document.querySelectorAll('.nav').forEach(n => n.onclick = () => {
+    document.querySelectorAll('.nav').forEach(x => x.classList.remove('on')); n.classList.add('on');
+  });
+</script>
+</body>
+</html>
