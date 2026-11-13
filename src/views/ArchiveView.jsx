@@ -40,6 +40,7 @@ function ArchiveCard({ p, index, onOpen }) {
       type="button"
       onClick={onOpen}
       style={{
+        position: 'relative',
         textAlign: 'left',
         background: face,
         color: nightInk,
@@ -53,8 +54,8 @@ function ArchiveCard({ p, index, onOpen }) {
         minHeight: 184,
         transition: 'transform .18s ease'
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = 'none')}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'rotate(0deg) translateY(-10px) scale(1.03)'; e.currentTarget.style.zIndex = '30'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.zIndex = ''; }}
     >
       <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span style={chip(REASONS.find((r) => r.key === p.reason)?.color || '#D8E2DC')}>
