@@ -97,6 +97,51 @@ export default function Dashboard({ projects, navigate }) {
   const avgIdle = idleList.length ? Math.round(idleList.reduce((s, p) => s + daysIdle(p), 0) / idleList.length) : 0;
   const avgCompletion = n ? Math.round(projects.reduce((s, p) => s + (p.completion || 0), 0) / n) : 0;
 
+  // ── "why you really stop" — data-derived insights ──────────────────
+  const insights = [];
+  if (n > 0) {
+    const reasonCounts = {};
+    idleList.forEach((p) => {
+      reasonCounts[p.reason] = (reasonCounts[p.reason] || 0) + 1;
+    });
+    const top = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0];
+    if (top) {
+      const [key, count] = top;
+      const pct = Math.round((count / idleList.length) * 100);
+      insights.push({
+        k: 'PATTERN',
+        title: `${pct}% of your shelf stops the same way`,
+        body: `${count} of ${idleList.length} paused/archived projects closed as “${reasonLabel(key)}”. That pattern is what to design against next time.`
+      });
+    }
+    const high = projects.filter((p) => p.completion >= 70);
+    const highRevived = high.filter((p) => (p.reopenCount || 0) > 0).length;
+    insights.push({
+      k: 'FINISHING',
+      title: `${high.length} of ${n} projects are past the finish line`,
+      body: high.length
+        ? `Anything ≥70% complete is closer to restart than rewrite — ${highRevived} of them were already picked up again. Finish beats fresh.`
+        : 'No projects past 70% yet — your closures are happening too early, before the payoff zone.'
+    });
+    const complexProjects = projects.filter((p) => p.reason === 'complex');
+    if (complexProjects.length) {
+      const avg = Math.round(complexProjects.reduce((s, p) => s + (p.completion || 0), 0) / complexProjects.length);
+      insights.push({
+        k: 'SCOPE WALLS',
+        title: `The “too complex” walls average ${avg}% done`,
+        body: 'You are hitting scope walls, not effort walls. Cut the scope until it fits your time — every “complex” closure could have been a Simplify closure.'
+      });
+    }
+    const stale = stopped.filter((p) => daysIdle(p) >= 30).length;
+    if (stale) {
+      insights.push({
+        k: 'DUST',
+        title: `${stale} project${stale === 1 ? '' : 's'} went cold past 30 days`,
+        body: 'Past a month untouched, willpower stops working — that is why the staleness nudge exists. Decide it now, or let it go with a reason.'
+      });
+    }
+  }
+
   const reasonRows = REASONS.map((r) => ({
     label: r.label,
     value: projects.filter((p) => p.reason === r.key).length,
@@ -166,6 +211,45 @@ export default function Dashboard({ projects, navigate }) {
           </div>
         </div>
       </div>
+
+      {/* why you really stop */}
+      {insights.length > 0 && (
+        <div
+          className="panel fade-up"
+          style={{
+            '--d': '0.18s',
+            padding: '22px 24px',
+            marginBottom: 22,
+            border: '1px solid var(--accent-2)'
+          }}
+        >
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 14px' }}>
+            WHAT YOUR SHELF TOLD ME
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 22 }}>
+            {insights.map((i) => (
+              <div key={i.k}>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent-2)', fontWeight: 700, margin: '0 0 5px' }}>
+                  {i.k}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    lineHeight: 1.35,
+                    margin: '0 0 6px'
+                  }}
+                >
+                  {i.title}
+                </p>
+                <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.55, margin: 0 }}>{i.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* nudge + highlight */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>

@@ -36,15 +36,18 @@ export default function App() {
 
   const notify = (msg) => setToast({ id: Date.now(), msg });
 
-  /** Merge or insert a project. */
-  const upsert = (proj) =>
-    setProjects((list) => {
-      const i = list.findIndex((p) => p.id === proj.id);
-      if (i === -1) return [proj, ...list];
+  /** Merge or insert a project. User-touched projects lose the seed flag so they persist. */
+  const upsert = (proj) => {
+    const cleaned = { ...proj };
+    delete cleaned.__seed;
+    return setProjects((list) => {
+      const i = list.findIndex((p) => p.id === cleaned.id);
+      if (i === -1) return [cleaned, ...list];
       const next = [...list];
-      next[i] = proj;
+      next[i] = cleaned;
       return next;
     });
+  };
 
   const remove = (id) => setProjects((list) => list.filter((p) => p.id !== id));
 

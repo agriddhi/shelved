@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { REASONS, makeProject, reasonLabel } from '../lib/store.js';
 import { requestDraft } from '../lib/ai.js';
+import { suggestReason } from '../lib/reason.js';
 
 const STEPS = [
   { q: 'What was it?', hint: 'A name and one line on what it was trying to become.' },
@@ -89,6 +90,20 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // keyword read of everything written so far → suggested stop reason
+  const suggestion = useMemo(
+    () =>
+      suggestReason({
+        name,
+        goal,
+        done: lines(doneText),
+        remaining: lines(leftText),
+        notes: reasonNote,
+        completion
+      }),
+    [name, goal, doneText, leftText, reasonNote, completion]
+  );
 
   const canNext =
     (step === 0 && name.trim().length > 1 && goal.trim().length > 3) ||
@@ -236,6 +251,33 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
 
       {step === 3 && (
         <div style={{ display: 'grid', gap: 14 }}>
+          {suggestion && suggestion.confidence >= 40 && (
+            <button
+              type="button"
+              onClick={() => setReason(suggestion.key)}
+              className="panel fade-up"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 18px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                border: '1px solid var(--accent-2)'
+              }}
+            >
+              <span
+                className="tag-pill"
+                style={{ ['--tag-color']: 'var(--accent)', flexShrink: 0 }}
+              >
+                AI SUGGESTION · KEYWORD
+              </span>
+              <span style={{ fontSize: 14.5, color: 'var(--body)' }}>
+                <strong style={{ color: 'var(--text)' }}>{reasonLabel(suggestion.key)}</strong> — {suggestion.confidence}%
+                confidence from your answers. Tap to use it.
+              </span>
+            </button>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             {REASONS.map((r) => {
               const on = reason === r.key;

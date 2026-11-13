@@ -23,10 +23,12 @@ Side projects don't die from lack of ideas; they die from **lost context**. When
 | **Thinking space** | Free-form notes + three actions — *Simplify*, *Sharpen*, *Next Steps*. Every AI response is a keep-or-dismiss card; you are the editor. |
 | **Decision recommendations** | A deterministic engine ranks Restart / Continue / Simplify / Repurpose / Archive from stop reason + completion + days idle, each with plain-language reasons. |
 | **Organized archive** | Filter every project by status, stop reason or keyword. Nothing is ever deleted. |
-| **Impact dashboard** | Revived count, avg idle, why-projects-stopped chart, completion spread, longest-waiting nudge, revival rate. |
+| **Impact dashboard** | Revived count, avg idle, why-projects-stopped chart, completion spread, longest-waiting nudge, revival rate, and **"What your shelf told me"** — data-derived insights naming your anti-pattern. |
+| **AI reason suggestion** | The closure flow reads your answers and suggests the stop reason (keyword scorer + optional LLM boost). Deterministic, always available. |
+| **Cold-start kit** | One Markdown packet per project: goal, done/remaining, first-30-minutes plan, resume sentence. Downloads with one click. |
 | **Staleness nudge** | Home screen flags anything paused ≥30 days with a one-click "Decide now". |
 | **README export** | Download the context card as Markdown, or copy-as-Markdown for instant sharing. |
-| **Responsive pass + light/dark themes** | Real two-theme design (peach day / plum night) with a toggle, persisted across sessions. |
+| **Responsive pass + light/dark themes** | Real two-theme design (warm near-white day / lifted plum night) with a toggle, persisted across sessions. |
 
 ## Architecture
 

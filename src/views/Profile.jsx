@@ -6,7 +6,8 @@ import {
   daysIdle,
   reasonLabel,
   timelineTitle,
-  toMarkdown
+  toMarkdown,
+  toColdStartDoc
 } from '../lib/store.js';
 
 const TIMELINE_COLORS = {
@@ -99,6 +100,19 @@ export default function Profile({ project: p, upsert, remove, navigate, notify, 
     notify('README exported ✓');
   };
 
+  const coldStart = () => {
+    const blob = new Blob([toColdStartDoc(p)], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${p.name.replace(/\s+/g, '-').toLowerCase()}-cold-start.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    notify('Cold-start kit downloaded ✓');
+  };
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(toMarkdown(p));
@@ -178,6 +192,9 @@ export default function Profile({ project: p, upsert, remove, navigate, notify, 
           )}
           <button className="btn-quiet" type="button" style={btn} onClick={download}>
             Export README
+          </button>
+          <button className="btn-quiet" type="button" style={btn} onClick={coldStart}>
+            Cold-start kit
           </button>
           <button className="btn-quiet" type="button" style={btn} onClick={copy}>
             Copy as Markdown
