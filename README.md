@@ -66,13 +66,15 @@ npm test           # 23 unit tests (recommender + text generators)
 npm run build      # production bundle
 ```
 
-Optional AI configuration (Vercel project → Settings → Environment Variables):
+Optional AI configuration (copy `.env.local.example` → `.env.local` for dev; set the same three in Vercel → Settings → Environment Variables for production):
 
 ```
-OPENAI_API_KEY=sk-...
-OPENAI_BASE_URL=https://api.openai.com/v1   # or any compatible provider
-AI_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your-key-here
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+AI_MODEL=gemini-3-flash-preview
 ```
+
+Any OpenAI-compatible endpoint works (Gemini free key shown). No key → the app serves rule-based drafts instead, labeled accordingly.
 
 ## Data & privacy
 
