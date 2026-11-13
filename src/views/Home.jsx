@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import CardSpread from '../components/CardSpread/CardSpread.jsx';
+import { useEffect, useRef, useState } from 'react';
+import SpineShelf from '../components/SpineShelf/SpineShelf.jsx';
 import { CARD_FACES, REASONS, reasonLabel, daysIdle, daysSince } from '../lib/store.js';
 
 function greeting() {
@@ -155,6 +155,37 @@ export default function Home({ projects, navigate }) {
     ? Math.round(idleList.reduce((s, p) => s + daysIdle(p), 0) / idleList.length)
     : 0;
 
+  // ── spin the shelf ─────────────────────────────────────────
+  const stalled = idleList;
+  const [spinning, setSpinning] = useState(false);
+  const [tick, setTick] = useState(0);
+  const [winner, setWinner] = useState(null);
+  const spinTimer = useRef(null);
+  useEffect(() => () => clearTimeout(spinTimer.current), []);
+
+  const openSpin = () => {
+    if (!stalled.length || spinning) return;
+    setWinner(null);
+    setSpinning(true);
+    setTick(0);
+    const target = Math.floor(Math.random() * stalled.length);
+    const total = stalled.length * 3 + target;
+    let i = 0;
+    const tickFn = () => {
+      i += 1;
+      setTick(i);
+      if (i >= total) {
+        setWinner(stalled[target]);
+        setSpinning(false);
+        return;
+      }
+      const p = i / total;
+      spinTimer.current = setTimeout(tickFn, 42 + Math.pow(p, 2.6) * 250);
+    };
+    spinTimer.current = setTimeout(tickFn, 42);
+  };
+  const currentIndex = spinning && stalled.length ? tick % stalled.length : -1;
+
   return (
     <div style={{ maxWidth: 1160, margin: '0 auto' }}>
       {/* hero — centred */}
@@ -254,50 +285,44 @@ export default function Home({ projects, navigate }) {
         </div>
       )}
 
-      {/* recently shelved — centred deck */}
+      {/* recently shelved — book spines on a shelf */}
       <div
         className="fade-up"
         style={{
           '--d': '0.36s',
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: 34,
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
           textAlign: 'center',
           background: 'var(--surface-2)',
           border: '1px solid var(--border)',
           borderRadius: 20,
-          padding: '22px 30px',
+          padding: '24px 30px 26px',
           marginBottom: 34
         }}
       >
-        <div style={{ flex: '0 0 auto', order: 1 }}>
-          <CardSpread
-            projects={deckProjects.map((p) => ({
-              name: p.name,
-              tag: reasonLabel(p.reason),
-              tagKey: p.reason,
-              meta: `${p.completion}% · ${daysIdle(p)}d`
-            }))}
-            onSelect={(proj) => {
-              const match = deckProjects.find((d) => d.name === proj.name);
-              if (match) navigate('profile', match.id);
-            }}
-          />
-        </div>
-        <div style={{ flex: '1 1 320px', maxWidth: 430, order: 2 }}>
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 8px' }}>
-            RECENTLY SHELVED
-          </p>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 25, color: 'var(--text)', margin: '0 0 10px' }}>
-            Good projects don’t die. They drift.
-          </h2>
-          <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
-            Five projects, five honest endings — hover the deck, pick one, and read the context card
-            written at the moment it stopped. Nothing is ever deleted.
-          </p>
-        </div>
+        <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 6px' }}>
+          RECENTLY SHELVED
+        </p>
+        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 25, color: 'var(--text)', margin: '0 0 4px' }}>
+          Good projects don’t die. They wait on the shelf.
+        </h2>
+        <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: '0 0 6px' }}>
+          Hover to pull one out — click to read its story.
+        </p>
+        <SpineShelf
+          projects={deckProjects.map((p) => ({ ...p }))}
+          onSelect={(p) => navigate('profile', p.id)}
+        />
+        <button
+          className="btn-ghost"
+          type="button"
+          style={{ marginTop: 18, fontSize: 13.5, padding: '9px 18px' }}
+          onClick={openSpin}
+          disabled={stalled.length === 0}
+        >
+          🎲 Can’t decide? Spin the shelf
+        </button>
       </div>
 
       {/* on the shelf — free, centred cards */}
@@ -314,6 +339,102 @@ export default function Home({ projects, navigate }) {
           <ProjectCard key={p.id} p={p} index={i} onOpen={() => navigate('profile', p.id)} />
         ))}
       </div>
+
+      {/* spin-the-shelf overlay */}
+      {(spinning || winner) && (
+        <div
+          role="dialog"
+          aria-label="Spin the shelf"
+          onClick={() => !spinning && setWinner(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 40,
+            background: 'rgba(12, 0, 22, 0.62)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 22
+          }}
+        >
+          <div
+            className="panel pop-in"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 560, width: '100%', padding: '30px 34px', textAlign: 'center' }}
+          >
+            <p style={{ fontSize: 11, letterSpacing: 3, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
+              SPIN THE SHELF
+            </p>
+            {spinning ? (
+              <>
+                <div
+                  style={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: 38,
+                    fontWeight: 700,
+                    color: 'var(--accent)',
+                    minHeight: 58,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '14px 0 6px'
+                  }}
+                >
+                  {stalled[currentIndex]?.name}
+                </div>
+                <p style={{ color: 'var(--muted)', margin: '0 0 18px' }}>Shuffling your shelf…</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                  {stalled.map((p, i) => (
+                    <span
+                      key={p.id}
+                      className="tag-pill"
+                      style={{
+                        ['--tag-color']: i === currentIndex ? 'var(--accent)' : 'var(--surface-2)',
+                        color: i === currentIndex ? 'var(--ink)' : 'var(--muted)',
+                        transform: i === currentIndex ? 'scale(1.14)' : 'none',
+                        opacity: i === currentIndex ? 1 : 0.65,
+                        transition: 'transform .09s ease, opacity .09s ease'
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              winner && (
+                <>
+                  <p
+                    style={{
+                      fontFamily: 'Georgia, serif',
+                      fontSize: 32,
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      margin: '14px 0 4px',
+                      lineHeight: 1.15
+                    }}
+                  >
+                    Shelf says:<br />{winner.name}
+                  </p>
+                  <p style={{ color: 'var(--muted)', fontSize: 14.5, margin: '8px 0 22px' }}>
+                    {reasonLabel(winner.reason)} · {winner.completion}% complete · idle {daysIdle(winner)}d —
+                    it’s been waiting long enough.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                    <button className="btn-primary" type="button" onClick={() => navigate('decision', winner.id)}>
+                      Decide it now →
+                    </button>
+                    <button className="btn-quiet" type="button" onClick={() => setWinner(null)}>
+                      Not today
+                    </button>
+                  </div>
+                </>
+              )
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

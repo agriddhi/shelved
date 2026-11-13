@@ -9,6 +9,7 @@ import {
   toMarkdown,
   toColdStartDoc
 } from '../lib/store.js';
+import { resumeScore } from '../lib/resume.js';
 
 const TIMELINE_COLORS = {
   dark: {
@@ -63,10 +64,30 @@ function Ring({ value }) {
   );
 }
 
+function MiniScore({ value, accent = 'var(--accent)' }) {
+  const r = 15;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width="42" height="42" viewBox="0 0 42 42" aria-label={`${value}% ready to restart`}>
+      <circle cx="21" cy="21" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="4.5" />
+      <circle
+        cx="21" cy="21" r={r} fill="none" stroke={accent} strokeWidth="4.5" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={c - (value / 100) * c}
+        transform="rotate(-90 21 21)"
+        style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.2,.75,.3,1)' }}
+      />
+      <text x="21" y="24.5" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="var(--text)">
+        {value}%
+      </text>
+    </svg>
+  );
+}
+
 export default function Profile({ project: p, upsert, remove, navigate, notify, theme = 'dark' }) {
   const reason = REASONS.find((r) => r.key === p.reason);
   const idle = daysIdle(p);
   const kept = (p.suggestions || []).filter((s) => s.kept);
+  const readiness = resumeScore(p);
 
   const timelineItems = [...(p.timeline || [])]
     .sort((a, b) => a.at - b.at)
@@ -200,6 +221,54 @@ export default function Profile({ project: p, upsert, remove, navigate, notify, 
             Copy as Markdown
           </button>
         </div>
+      </div>
+
+      {/* restart readiness */}
+      <div
+        className="panel fade-up"
+        style={{
+          '--d': '0.08s',
+          padding: '16px 24px',
+          marginBottom: 22,
+          display: 'flex',
+          gap: 18,
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}
+      >
+        <MiniScore value={readiness.score} accent={readiness.score >= 80 ? 'var(--accent)' : 'var(--accent-2)'} />
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <p style={{ fontSize: 10.5, letterSpacing: 2.4, color: 'var(--accent)', fontWeight: 700, margin: '0 0 4px' }}>
+            RESTART READINESS
+          </p>
+          {readiness.missing.length === 0 ? (
+            <p style={{ fontSize: 14.5, color: 'var(--text)', margin: 0 }}>
+              This context card is restart-proof — future you thanks you.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+              {readiness.missing.slice(0, 4).map((m) => (
+                <span
+                  key={m.key}
+                  className="tag-pill"
+                  style={{ ['--tag-color']: 'var(--tag-lost)' }}
+                >
+                  +{m.points} {m.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        {readiness.missing.length > 0 && (
+          <button
+            className="btn-quiet"
+            type="button"
+            style={{ fontSize: 12.5, padding: '8px 14px', flexShrink: 0 }}
+            onClick={() => navigate('thinking', p.id)}
+          >
+            Fill the gaps →
+          </button>
+        )}
       </div>
 
       {/* context card */}
