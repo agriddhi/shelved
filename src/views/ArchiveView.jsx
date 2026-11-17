@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { CARD_FACES, REASONS, reasonLabel, daysIdle, daysSince } from '../lib/store.js';
+import { CARD_FACES, REASONS, reasonLabel, daysIdle, daysSince, toMarkdown } from '../lib/store.js';
+import { exportShelf } from '../lib/exportShelf.js';
+import { useRecentSearches, useSelection } from '../hooks/hooks.js';
 
 const STATUSES = [
   { key: 'all', label: 'All' },
@@ -10,23 +12,21 @@ const STATUSES = [
 
 const nightInk = '#290044';
 
-function chip(color) {
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: 10.5,
-    fontWeight: 700,
-    letterSpacing: 0.4,
-    padding: '3px 10px',
-    borderRadius: 30,
-    color: nightInk,
-    background: color,
-    border: '1px solid rgba(41,0,68,.3)'
-  };
-}
+const chip = (color) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 10.5,
+  fontWeight: 700,
+  letterSpacing: 0.4,
+  padding: '3px 10px',
+  borderRadius: 30,
+  color: nightInk,
+  background: color,
+  border: '1px solid rgba(41,0,68,.3)'
+});
 
-function ArchiveCard({ p, index, onOpen }) {
+function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
   const face = CARD_FACES[index % CARD_FACES.length];
   const idle = daysIdle(p);
   const meta =
@@ -35,6 +35,61 @@ function ArchiveCard({ p, index, onOpen }) {
       : p.status === 'archived'
         ? `Archived · idle ${idle}d`
         : `Paused ${idle}d ago`;
+
+  if (selectMode) {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggle(p.id)}
+        aria-pressed={selected}
+        style={{
+          position: 'relative',
+          textAlign: 'left',
+          background: face,
+          color: nightInk,
+          border: selected ? '3px solid var(--accent-2)' : '2px solid rgba(41,0,68,.35)',
+          borderRadius: 16,
+          padding: '18px 18px 16px',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          minHeight: 184,
+          transition: 'transform .18s ease, box-shadow .18s ease',
+          boxShadow: selected ? '0 0 0 4px rgba(138,42,120,.35)' : 'none'
+        }}
+      >
+        <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <span style={chip(REASONS.find((r) => r.key === p.reason)?.color || '#D8E2DC')}>
+            {reasonLabel(p.reason)}
+          </span>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              border: '2px solid rgba(41,0,68,.45)',
+              background: selected ? 'var(--accent-2)' : 'rgba(41,0,68,.08)',
+              color: selected ? '#FDFAF6' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: 15
+            }}
+          >
+            ✓
+          </span>
+        </span>
+        <span style={{ fontFamily: 'Georgia, serif', fontSize: 19, fontWeight: 700, lineHeight: 1.15 }}>
+          {p.name}
+        </span>
+        <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'rgba(41,0,68,.75)', flex: 1 }}>{p.goal}</span>
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -68,9 +123,7 @@ function ArchiveCard({ p, index, onOpen }) {
       <span style={{ fontFamily: 'Georgia, serif', fontSize: 19, fontWeight: 700, lineHeight: 1.15 }}>
         {p.name}
       </span>
-      <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'rgba(41,0,68,.75)', flex: 1 }}>
-        {p.goal}
-      </span>
+      <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'rgba(41,0,68,.75)', flex: 1 }}>{p.goal}</span>
       <span>
         <span
           style={{
@@ -93,10 +146,14 @@ function ArchiveCard({ p, index, onOpen }) {
   );
 }
 
-export default function ArchiveView({ projects, navigate }) {
+export default function ArchiveView({ projects, upsert, remove, navigate, notify }) {
   const [status, setStatus] = useState('all');
   const [reason, setReason] = useState('all');
   const [query, setQuery] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
+  const recents = useRecentSearches(5);
+  const selection = useSelection();
+  const { items: recentItems, add: addRecent, clear: clearRecents } = recents;
 
   const filtered = useMemo(() => {
     return projects
@@ -121,6 +178,36 @@ export default function ArchiveView({ projects, navigate }) {
     active: projects.filter((p) => p.status === 'active').length
   };
 
+  const commitSearch = (q) => {
+    addRecent(q);
+  };
+
+  const bulkArchive = () => {
+    const now = Date.now();
+    selection.sel.forEach((id) => {
+      const p = projects.find((x) => x.id === id);
+      if (p && p.status !== 'archived') {
+        upsert({ ...p, status: 'archived', timeline: [...(p.timeline || []), { type: 'decision', at: now }] });
+      }
+    });
+    notify(`${selection.count} project${selection.count === 1 ? '' : 's'} archived ✓`);
+    selection.clear();
+    setSelectMode(false);
+  };
+
+  const bulkDelete = () => {
+    if (!window.confirm(`Permanently delete ${selection.count} project${selection.count === 1 ? '' : 's'} from this device? This cannot be undone.`)) return;
+    selection.sel.forEach((id) => remove(id));
+    notify(`${selection.count} project${selection.count === 1 ? '' : 's'} deleted`);
+    selection.clear();
+    setSelectMode(false);
+  };
+
+  const exportAll = () => {
+    exportShelf(projects, toMarkdown);
+    notify('Shelf exported as ZIP ✓');
+  };
+
   return (
     <div>
       <p style={{ fontSize: 11.5, letterSpacing: 3.2, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
@@ -130,7 +217,7 @@ export default function ArchiveView({ projects, navigate }) {
         Every project, kept with its story.
       </h1>
       <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 22px' }}>
-        Filter by status, stop reason or name. Nothing is ever deleted — only shelved.
+        Filter by status, stop reason or keyword. Nothing is ever deleted — only shelved.
       </p>
 
       {/* filters */}
@@ -142,10 +229,10 @@ export default function ArchiveView({ projects, navigate }) {
           alignItems: 'center',
           flexWrap: 'wrap',
           padding: '14px 18px',
-          marginBottom: 24
+          marginBottom: 10
         }}
       >
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {STATUSES.map((s) => (
             <button
               key={s.key}
@@ -191,7 +278,8 @@ export default function ArchiveView({ projects, navigate }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name or goal…"
+          onKeyDown={(e) => e.key === 'Enter' && commitSearch(query)}
+          placeholder="Search name or goal… (Enter saves it)"
           style={{
             flex: '1 1 200px',
             minWidth: 180,
@@ -205,7 +293,88 @@ export default function ArchiveView({ projects, navigate }) {
             fontFamily: 'inherit'
           }}
         />
+
+        <button className="btn-ghost" type="button" style={{ padding: '9px 16px', fontSize: 13 }} onClick={exportAll}>
+          ⤓ Export shelf (ZIP)
+        </button>
+        <button
+          className={selectMode ? 'btn-primary' : 'btn-quiet'}
+          type="button"
+          style={{ padding: '9px 16px', fontSize: 13 }}
+          onClick={() => { setSelectMode(!selectMode); selection.clear(); }}
+        >
+          {selectMode ? 'Done' : 'Spring clean'}
+        </button>
       </div>
+
+      {/* recent searches */}
+      {recentItems.length > 0 && !selectMode && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', margin: '0 0 16px' }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1.4, textTransform: 'uppercase' }}>Recent</span>
+          {recentItems.map((q) => (
+            <button
+              key={q}
+              type="button"
+              className="tag-pill"
+              style={{ cursor: 'pointer', ['--tag-color']: 'var(--surface-2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
+              onClick={() => setQuery(q)}
+            >
+              {q}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="btn-quiet"
+            style={{ fontSize: 11, padding: '4px 10px' }}
+            onClick={clearRecents}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* batch action toolbar */}
+      {selectMode && (
+        <div
+          className="panel"
+          style={{
+            display: 'flex',
+            gap: 12,
+            alignItems: 'center',
+            padding: '12px 18px',
+            margin: '0 0 16px',
+            border: '1px solid var(--accent-2)'
+          }}
+        >
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+            {selection.count} selected
+          </span>
+          <button className="btn-primary" type="button" style={{ padding: '9px 18px', fontSize: 13 }} onClick={bulkArchive} disabled={!selection.count}>
+            Archive selected
+          </button>
+          <button
+            type="button"
+            onClick={bulkDelete}
+            disabled={!selection.count}
+            style={{
+              background: 'transparent',
+              color: 'var(--tag-lost)',
+              border: '1px solid var(--tag-lost)',
+              borderRadius: 12,
+              padding: '9px 18px',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              opacity: selection.count ? 1 : 0.4
+            }}
+          >
+            Delete selected
+          </button>
+          <button className="btn-quiet" type="button" onClick={() => { selection.clear(); setSelectMode(false); }}>
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* results */}
       {filtered.length === 0 ? (
@@ -223,7 +392,15 @@ export default function ArchiveView({ projects, navigate }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
           {filtered.map((p, i) => (
-            <ArchiveCard key={p.id} p={p} index={i} onOpen={() => navigate('profile', p.id)} />
+            <ArchiveCard
+              key={p.id}
+              p={p}
+              index={i}
+              selectMode={selectMode}
+              selected={selection.has(p.id)}
+              onToggle={selection.toggle}
+              onOpen={() => navigate('profile', p.id)}
+            />
           ))}
         </div>
       )}

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import SpineShelf from '../components/SpineShelf/SpineShelf.jsx';
 import { CARD_FACES, REASONS, reasonLabel, daysIdle, daysSince } from '../lib/store.js';
+import { idleColor, dustLevel } from '../lib/idle.js';
+import { useTilt } from '../hooks/hooks.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -46,6 +48,8 @@ function useCountUp(target, duration = 1000) {
 function ProjectCard({ p, index, onOpen }) {
   const face = CARD_FACES[index % CARD_FACES.length];
   const idle = daysIdle(p);
+  const dust = dustLevel(idle);
+  const tilt = useTilt(7);
   const meta =
     p.status === 'active'
       ? `In progress · touched ${daysSince(p.lastTouchedAt)}d ago`
@@ -57,6 +61,8 @@ function ProjectCard({ p, index, onOpen }) {
       type="button"
       onClick={() => onOpen()}
       className="project-card"
+      ref={tilt.ref}
+      {...tilt.handlers}
       style={{
         '--tilt': `${TILT[index % TILT.length]}deg`,
         '--d': `${index * 0.07}s`,
@@ -113,7 +119,21 @@ function ProjectCard({ p, index, onOpen }) {
         </span>
         <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
           <span>{p.completion}% done</span>
-          <span style={{ color: 'rgba(41,0,68,.65)' }}>{meta}</span>
+          <span style={{ color: 'rgba(41,0,68,.65)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span
+              aria-hidden="true"
+              title={dust === 0 ? 'Fresh' : dust < 0.4 ? 'Gathering dust' : dust < 0.75 ? 'Dusty' : 'Ancient'}
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: idleColor(idle),
+                border: '1px solid rgba(41,0,68,.4)',
+                display: 'inline-block'
+              }}
+            />
+            {meta}
+          </span>
         </span>
       </span>
     </button>
@@ -207,7 +227,9 @@ export default function Home({ projects, navigate }) {
             margin: '12px 0 10px'
           }}
         >
-          {greeting()}. Give it an<br />honest ending.
+          {greeting()}. Give it an{' '}
+          <br />
+          honest ending.
         </h1>
         <p
           className="fade-up"

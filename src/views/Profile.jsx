@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import TimelineSlider from '../components/TimelineSlider.jsx';
 import HoldButton from '../components/HoldButton/HoldButton.jsx';
+import { useHoldTicks } from '../hooks/hooks.js';
 import {
   REASONS,
   daysSince,
@@ -10,6 +12,7 @@ import {
   toColdStartDoc
 } from '../lib/store.js';
 import { resumeScore } from '../lib/resume.js';
+import { similarProjects } from '../lib/idle.js';
 
 const TIMELINE_COLORS = {
   dark: {
@@ -83,11 +86,14 @@ function MiniScore({ value, accent = 'var(--accent)' }) {
   );
 }
 
-export default function Profile({ project: p, upsert, remove, navigate, notify, theme = 'dark' }) {
+export default function Profile({ project: p, projects = [], upsert, remove, navigate, notify, theme = 'dark' }) {
   const reason = REASONS.find((r) => r.key === p.reason);
   const idle = daysIdle(p);
   const kept = (p.suggestions || []).filter((s) => s.kept);
   const readiness = resumeScore(p);
+  const similar = similarProjects(p, projects, 3);
+  const [holding, setHolding] = useState(false);
+  useHoldTicks(holding);
 
   const timelineItems = [...(p.timeline || [])]
     .sort((a, b) => a.at - b.at)
@@ -131,6 +137,7 @@ export default function Profile({ project: p, upsert, remove, navigate, notify, 
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    upsert({ ...p, kitDownloadedAt: Date.now() });
     notify('Cold-start kit downloaded ✓');
   };
 
@@ -271,6 +278,33 @@ export default function Profile({ project: p, upsert, remove, navigate, notify, 
         )}
       </div>
 
+      {/* you also shelved */}
+      {similar.length > 0 && (
+        <p style={{ fontSize: 13, color: 'var(--muted)', margin: '-6px 0 18px', paddingLeft: 4 }}>
+          You also shelved for “{reasonLabel(p.reason).toLowerCase()}”:{' '}
+          {similar.map((o, i) => (
+            <span key={o.id}>
+              <button
+                type="button"
+                onClick={() => navigate('profile', o.id)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--accent)',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 600
+                }}
+              >
+                {o.name}
+              </button>
+              {i < similar.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+        </p>
+      )}
+
       {/* context card */}
       <div className="panel" style={{ padding: '22px 26px', marginBottom: 22 }}>
         <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 10px' }}>
@@ -410,6 +444,7 @@ export default function Profile({ project: p, upsert, remove, navigate, notify, 
           doneLabel="Deleted"
           resetAfter={1400}
           onHold={destroy}
+          onHoldingChange={setHolding}
         >
           Hold to delete
         </HoldButton>

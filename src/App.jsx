@@ -6,6 +6,8 @@ import ThinkingSpace from './views/ThinkingSpace.jsx';
 import Decision from './views/Decision.jsx';
 import ArchiveView from './views/ArchiveView.jsx';
 import Dashboard from './views/Dashboard.jsx';
+import { useTheme, THEME_NAMES } from './hooks/useTheme.js';
+import { useShortcuts } from './hooks/hooks.js';
 import { loadProjects, saveProjects } from './lib/store.js';
 
 const NAV = [
@@ -14,17 +16,23 @@ const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: '◈' }
 ];
 
+const SHORTCUTS = [
+  ['N', 'Close a new project'],
+  ['A', 'Go to the archive'],
+  ['D', 'Go to the dashboard'],
+  ['1–9', 'Jump to that project'],
+  ['Esc', 'Back to the shelf'],
+  ['?', 'Toggle this help']
+];
+
 export default function App() {
   const [projects, setProjects] = useState(() => loadProjects());
   const [view, setView] = useState({ name: 'home' });
   const [toast, setToast] = useState(null);
-  const [theme, setTheme] = useState(() => localStorage.getItem('shelved-theme') || 'dark');
+  const [helpOpen, setHelpOpen] = useState(false);
+  const { theme, mode, toggleMode, cycleTheme } = useTheme();
 
   useEffect(() => saveProjects(projects), [projects]);
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('shelved-theme', theme);
-  }, [theme]);
   useEffect(() => {
     if (!toast) return undefined;
     const t = setTimeout(() => setToast(null), 3200);
@@ -33,8 +41,25 @@ export default function App() {
 
   const navigate = (name, id) => setView({ name, id });
   const current = useMemo(() => projects.find((p) => p.id === view.id), [projects, view.id]);
+  const sortedShelf = useMemo(
+    () => [...projects].sort((a, b) => (b.lastTouchedAt || 0) - (a.lastTouchedAt || 0)),
+    [projects]
+  );
 
   const notify = (msg) => setToast({ id: Date.now(), msg });
+
+  // keyboard shortcuts — never fire while typing in a field
+  useShortcuts({
+    onNew: () => navigate('closure'),
+    onArchive: () => navigate('archive'),
+    onDashboard: () => navigate('dashboard'),
+    onJump: (i) => {
+      const target = sortedShelf[i];
+      if (target) navigate('profile', target.id);
+    },
+    onHome: () => (helpOpen ? setHelpOpen(false) : navigate('home')),
+    onHelp: () => setHelpOpen((v) => !v)
+  });
 
   /** Merge or insert a project. User-touched projects lose the seed flag so they persist. */
   const upsert = (proj) => {
@@ -57,7 +82,7 @@ export default function App() {
     remove,
     navigate,
     notify,
-    theme,
+    theme: mode,
     view
   };
 
@@ -136,12 +161,37 @@ export default function App() {
         })}
 
         <div style={{ flex: 1 }} />
-        <p style={{ fontSize: 11, color: 'var(--muted)', padding: '0 10px 12px', margin: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--muted)', padding: '0 10px 10px', margin: 0 }}>
           Your data never leaves this device.
         </p>
+
+        {/* theme cycle: wood → library → paper */}
         <button
           type="button"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onClick={cycleTheme}
+          title="Cycle theme"
+          style={{
+            background: 'var(--surface-2)',
+            color: 'var(--text)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 13,
+            padding: '10px 14px',
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 0.6,
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <span>{THEME_NAMES[theme] || 'Library'}</span>
+          <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>THEME →</span>
+        </button>
+        {/* mode toggle */}
+        <button
+          type="button"
+          onClick={toggleMode}
           style={{
             background: 'var(--surface-2)',
             color: 'var(--text)',
@@ -153,8 +203,11 @@ export default function App() {
             cursor: 'pointer'
           }}
         >
-          {theme === 'dark' ? '☾ Dark' : '☀ Light'}
+          {mode === 'dark' ? '☾ Dark' : '☀ Light'}
         </button>
+        <p style={{ fontSize: 10.5, color: 'var(--muted)', textAlign: 'center', margin: '2px 0 0' }}>
+          press <span className="kbd">?</span> for shortcuts
+        </p>
       </aside>
 
       {/* main */}
@@ -175,9 +228,50 @@ export default function App() {
           }}
         >
           <span>Shelved · KairoAeonTech · RunUp Coders Hackathon 2026</span>
-          <span>Capture in the last two minutes.</span>
+          <span>N closure · A archive · D dashboard · 1–9 jump</span>
         </footer>
       </main>
+
+      {/* keyboard help overlay */}
+      {helpOpen && (
+        <div
+          role="dialog"
+          aria-label="Keyboard shortcuts"
+          onClick={() => setHelpOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 45,
+            background: 'rgba(10, 0, 18, 0.6)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 22
+          }}
+        >
+          <div
+            className="panel pop-in"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 440, width: '100%', padding: '26px 30px' }}
+          >
+            <p style={{ fontSize: 11, letterSpacing: 3, color: 'var(--accent)', fontWeight: 700, margin: '0 0 14px' }}>
+              KEYBOARD SHORTCUTS
+            </p>
+            <div style={{ display: 'grid', gap: 12 }}>
+              {SHORTCUTS.map(([key, desc]) => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <span className="kbd">{key}</span>
+                  <span style={{ fontSize: 14.5, color: 'var(--body)' }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '16px 0 0', textAlign: 'center' }}>
+              Press <span className="kbd">?</span> or <span className="kbd">Esc</span> to close
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* toast */}
       {toast && (

@@ -35,6 +35,7 @@ export default function HoldButton({
   disabled = false,
   onHold,
   onTap,
+  onHoldingChange,
   className = ''
 }) {
   const [phase, setPhase] = useState('idle');
@@ -194,6 +195,11 @@ export default function HoldButton({
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [phase]);
+
+  // additive hook for ticks/haptics while the hold is active
+  useEffect(() => {
+    onHoldingChange?.(phase === 'holding');
+  }, [phase, onHoldingChange]);
 
   useEffect(() => {
     return () => {

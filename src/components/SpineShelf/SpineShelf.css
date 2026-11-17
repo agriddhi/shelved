@@ -38,7 +38,7 @@
   gap: 6px;
   padding: 12px 6px 10px;
   color: #290044;
-  transform: rotate(var(--tilt, 0deg));
+  transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) rotate(var(--tilt, 0deg));
   transform-origin: bottom center;
   transition: transform 0.26s cubic-bezier(0.2, 0.75, 0.3, 1), box-shadow 0.26s ease;
   animation: spineDeal 0.62s cubic-bezier(0.2, 0.75, 0.3, 1) backwards;
@@ -47,7 +47,7 @@
 
 .spine:hover,
 .spine:focus-visible {
-  transform: translateY(-28px) rotate(0deg);
+  transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-28px) rotate(0deg);
   z-index: 6;
   box-shadow: 0 22px 36px rgba(0, 0, 0, 0.35), inset -4px 0 7px rgba(41, 0, 68, 0.18),
     inset 4px 0 7px rgba(255, 255, 255, 0.35);
@@ -108,9 +108,9 @@
 /* the plank the books stand on */
 .shelf-plank {
   height: 15px;
-  background: #5a3a22;
-  border-top: 2px solid #7a5435;
-  border-bottom: 2px solid #2e1c10;
+  background: var(--plank, #5a3a22);
+  border-top: 2px solid var(--plank-edge, #7a5435);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
   border-radius: 3px;
   width: 100%;
 }

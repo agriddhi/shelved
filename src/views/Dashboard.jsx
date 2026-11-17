@@ -1,4 +1,5 @@
 import { daysIdle, reasonLabel, REASONS } from '../lib/store.js';
+import { streak, shelfTimestamps } from '../lib/idle.js';
 
 function Stat({ value, label, hot }) {
   return (
@@ -89,6 +90,7 @@ function Bands({ buckets }) {
 
 export default function Dashboard({ projects, navigate }) {
   const n = projects.length;
+  const shelvingStreak = streak(shelfTimestamps(projects));
   const revived = projects.filter((p) => (p.reopenCount || 0) > 0);
   const archived = projects.filter((p) => p.status === 'archived');
   const stopped = projects.filter((p) => p.status === 'stopped');
@@ -174,6 +176,12 @@ export default function Dashboard({ projects, navigate }) {
       <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 22px' }}>
         What closure actually gives you: context preserved, decisions recorded, projects revived.
       </p>
+      {shelvingStreak > 1 && (
+        <p style={{ fontSize: 13, fontWeight: 700, margin: '-12px 0 18px', color: 'var(--body)' }}>
+          <span className="tag-pill" style={{ ['--tag-color']: 'var(--accent)', marginRight: 8 }}>🔥 STREAK</span>
+          {shelvingStreak} days of closing projects in a row.
+        </p>
+      )}
 
       {/* stat row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 26 }}>

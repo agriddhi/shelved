@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { REASONS, makeProject, reasonLabel } from '../lib/store.js';
 import { requestDraft } from '../lib/ai.js';
 import { suggestReason } from '../lib/reason.js';
+import { useRotatingPlaceholder } from '../hooks/hooks.js';
+import { shelvedChime, haptic } from '../lib/fx.js';
 
 const STEPS = [
   { q: 'What was it?', hint: 'A name and one line on what it was trying to become.' },
@@ -37,8 +39,9 @@ function loadDraft() {
   }
 }
 
-export default function ClosureFlow({ upsert, navigate, notify }) {
+export default function ClosureFlow({ upsert, navigate, notify, projects = [] }) {
   const [saved] = useState(loadDraft);
+  const rotatingName = useRotatingPlaceholder(projects.map((p) => p.name));
   const [step, setStep] = useState(saved.step || 0);
   const [name, setName] = useState(saved.name || '');
   const [goal, setGoal] = useState(saved.goal || '');
@@ -146,6 +149,8 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
       description: draft.trim()
     });
     upsert(proj);
+    shelvedChime();
+    haptic(18);
     notify(`Context card saved in ${mm}:${ss} ✓`);
     navigate('profile', proj.id);
   };
@@ -191,7 +196,7 @@ export default function ClosureFlow({ upsert, navigate, notify }) {
         <div style={{ display: 'grid', gap: 14 }}>
           <input
             style={input}
-            placeholder="Project name — e.g. Study Planner"
+            placeholder={`Project name — ${rotatingName}`}
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
