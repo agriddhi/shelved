@@ -1,14 +1,14 @@
-// useTheme — theme (wood | library | paper) × mode (light | dark), remembered on device.
+// useTheme — theme (plum | indigo) × mode (light | dark), remembered on device.
 import { useEffect, useState } from 'react';
 
-export const THEMES = ['wood', 'library', 'paper'];
-export const THEME_NAMES = { wood: 'Wood', library: 'Library', paper: 'Paper' };
+export const THEMES = ['plum', 'indigo'];
+export const THEME_NAMES = { plum: 'Plum', indigo: 'Indigo' };
 
 const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const set = (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
 
 export function useTheme() {
-  const [theme, setTheme] = useState(() => (THEMES.includes(get('shelved.theme')) ? get('shelved.theme') : 'library'));
+  const [theme, setTheme] = useState(() => (THEMES.includes(get('shelved.theme')) ? get('shelved.theme') : 'plum'));
   const [mode, setMode] = useState(() =>
     get('shelved.mode') || (typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
 

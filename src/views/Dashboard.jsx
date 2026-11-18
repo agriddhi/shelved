@@ -3,18 +3,19 @@ import { streak, shelfTimestamps } from '../lib/idle.js';
 
 function Stat({ value, label, hot }) {
   return (
-    <div className="panel" style={{ padding: '16px 18px' }}>
+    <div className="bento-card">
       <div
         style={{
-          fontFamily: 'Georgia, serif',
-          fontSize: 30,
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: 36,
           fontWeight: 700,
-          color: hot ? 'var(--accent)' : 'var(--text)'
+          color: hot ? 'var(--accent)' : 'var(--text)',
+          lineHeight: 1.1
         }}
       >
         {value}
       </div>
-      <div style={{ fontSize: 10.5, letterSpacing: 1.4, color: 'var(--muted)', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 10, letterSpacing: 1.4, color: 'var(--muted)', textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginTop: 8 }}>
         {label}
       </div>
     </div>
@@ -25,20 +26,20 @@ function Stat({ value, label, hot }) {
 function Bars({ rows, total }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   return (
-    <div style={{ display: 'grid', gap: 13 }}>
+    <div style={{ display: 'grid', gap: 14 }}>
       {rows.map((r) => (
         <div key={r.label}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, marginBottom: 5 }}>
-            <span style={{ color: 'var(--body)', fontWeight: 600 }}>{r.label}</span>
-            <span style={{ color: 'var(--muted)', fontWeight: 700 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, marginBottom: 6, fontWeight: 600 }}>
+            <span style={{ color: 'var(--body)' }}>{r.label}</span>
+            <span style={{ color: 'var(--muted)', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
               {r.value}
               {total ? ` · ${Math.round((r.value / total) * 100)}%` : ''}
             </span>
           </div>
           <div
             style={{
-              height: 12,
-              borderRadius: 8,
+              height: 10,
+              borderRadius: 5,
               background: 'var(--surface-2)',
               overflow: 'hidden',
               border: '1px solid var(--border)'
@@ -49,8 +50,8 @@ function Bars({ rows, total }) {
                 height: '100%',
                 width: `${(r.value / max) * 100}%`,
                 background: r.color || 'var(--accent)',
-                borderRadius: 8,
-                transition: 'width .4s ease'
+                borderRadius: 5,
+                transition: 'width .5s cubic-bezier(0.16,1,0.3,1)'
               }}
             />
           </div>
@@ -65,21 +66,21 @@ function Bands({ buckets }) {
   const total = buckets.reduce((s, b) => s + b.value, 0) || 1;
   return (
     <div>
-      <div style={{ display: 'flex', height: 26, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', height: 24, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
         {buckets.map((b) =>
           b.value > 0 ? (
             <div
               key={b.label}
               title={`${b.label}: ${b.value}`}
-              style={{ width: `${(b.value / total) * 100}%`, background: b.color }}
+              style={{ width: `${(b.value / total) * 100}%`, background: b.color, transition: 'width .5s ease' }}
             />
           ) : null
         )}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 14 }}>
         {buckets.map((b) => (
-          <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--muted)' }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: b.color, border: '1px solid rgba(41,0,68,.3)' }} />
+          <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--muted)' }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: b.color, border: '1px solid var(--border)' }} />
             {b.label} — <strong style={{ color: 'var(--body)' }}>{b.value}</strong>
           </span>
         ))}
@@ -87,6 +88,13 @@ function Bands({ buckets }) {
     </div>
   );
 }
+
+// Simple SVG icon for insights
+const IconInsight = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+  </svg>
+);
 
 export default function Dashboard({ projects, navigate }) {
   const n = projects.length;
@@ -99,13 +107,10 @@ export default function Dashboard({ projects, navigate }) {
   const avgIdle = idleList.length ? Math.round(idleList.reduce((s, p) => s + daysIdle(p), 0) / idleList.length) : 0;
   const avgCompletion = n ? Math.round(projects.reduce((s, p) => s + (p.completion || 0), 0) / n) : 0;
 
-  // ── "why you really stop" — data-derived insights ──────────────────
   const insights = [];
   if (n > 0) {
     const reasonCounts = {};
-    idleList.forEach((p) => {
-      reasonCounts[p.reason] = (reasonCounts[p.reason] || 0) + 1;
-    });
+    idleList.forEach((p) => { reasonCounts[p.reason] = (reasonCounts[p.reason] || 0) + 1; });
     const top = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0];
     if (top) {
       const [key, count] = top;
@@ -113,7 +118,7 @@ export default function Dashboard({ projects, navigate }) {
       insights.push({
         k: 'PATTERN',
         title: `${pct}% of your shelf stops the same way`,
-        body: `${count} of ${idleList.length} paused/archived projects closed as “${reasonLabel(key)}”. That pattern is what to design against next time.`
+        body: `${count} of ${idleList.length} paused/archived projects closed as "${reasonLabel(key)}". That pattern is what to design against next time.`
       });
     }
     const high = projects.filter((p) => p.completion >= 70);
@@ -130,8 +135,8 @@ export default function Dashboard({ projects, navigate }) {
       const avg = Math.round(complexProjects.reduce((s, p) => s + (p.completion || 0), 0) / complexProjects.length);
       insights.push({
         k: 'SCOPE WALLS',
-        title: `The “too complex” walls average ${avg}% done`,
-        body: 'You are hitting scope walls, not effort walls. Cut the scope until it fits your time — every “complex” closure could have been a Simplify closure.'
+        title: `The "too complex" walls average ${avg}% done`,
+        body: 'You are hitting scope walls, not effort walls. Cut the scope until it fits your time — every "complex" closure could have been a Simplify closure.'
       });
     }
     const stale = stopped.filter((p) => daysIdle(p) >= 30).length;
@@ -151,40 +156,40 @@ export default function Dashboard({ projects, navigate }) {
   })).filter((r) => r.value > 0);
 
   const statusRows = [
-    { label: 'Stopped — awaiting a decision', value: stopped.length, color: '#8A2A78' },
-    { label: 'Active', value: active.length, color: '#E3EF4F' },
-    { label: 'Archived', value: archived.length, color: '#5882E8' }
+    { label: 'Stopped — awaiting a decision', value: stopped.length, color: 'var(--accent-2)' },
+    { label: 'Active', value: active.length, color: 'var(--accent)' },
+    { label: 'Archived', value: archived.length, color: 'var(--accent-3)' }
   ].filter((r) => r.value > 0);
 
   const buckets = [
-    { label: '0–33%', value: projects.filter((p) => p.completion <= 33).length, color: '#F4ACB7' },
-    { label: '34–66%', value: projects.filter((p) => p.completion > 33 && p.completion <= 66).length, color: '#FFCAD4' },
-    { label: '67–99%', value: projects.filter((p) => p.completion > 66 && p.completion < 100).length, color: '#EEE3B0' },
-    { label: '100%', value: projects.filter((p) => p.completion >= 100).length, color: '#D8E2DC' }
+    { label: '0–33%', value: projects.filter((p) => p.completion <= 33).length, color: 'var(--tag-lost)' },
+    { label: '34–66%', value: projects.filter((p) => p.completion > 33 && p.completion <= 66).length, color: 'var(--tag-time)' },
+    { label: '67–99%', value: projects.filter((p) => p.completion > 66 && p.completion < 100).length, color: 'var(--accent-3)' },
+    { label: '100%', value: projects.filter((p) => p.completion >= 100).length, color: 'var(--surface-hover)' }
   ];
 
   const longestIdle = [...idleList].sort((a, b) => daysIdle(b) - daysIdle(a))[0];
 
   return (
-    <div>
-      <p style={{ fontSize: 11.5, letterSpacing: 3.2, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
+    <div style={{ maxWidth: 1200 }}>
+      <p style={{ fontSize: 11, letterSpacing: 3.2, color: 'var(--accent)', fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
         IMPACT DASHBOARD
       </p>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 34, color: 'var(--text)', margin: '8px 0 4px' }}>
+      <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 40, color: 'var(--text)', margin: '12px 0 6px', letterSpacing: '-0.03em' }}>
         Your shelf, in numbers.
       </h1>
-      <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 22px' }}>
+      <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 28px', lineHeight: 1.6 }}>
         What closure actually gives you: context preserved, decisions recorded, projects revived.
       </p>
       {shelvingStreak > 1 && (
-        <p style={{ fontSize: 13, fontWeight: 700, margin: '-12px 0 18px', color: 'var(--body)' }}>
-          <span className="tag-pill" style={{ ['--tag-color']: 'var(--accent)', marginRight: 8 }}>🔥 STREAK</span>
+        <p style={{ fontSize: 13, fontWeight: 700, margin: '-14px 0 22px', color: 'var(--body)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="tag-pill" style={{ ['--tag-color']: 'var(--accent-3)', color: 'var(--ink)' }}>🔥 STREAK</span>
           {shelvingStreak} days of closing projects in a row.
         </p>
       )}
 
-      {/* stat row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 26 }}>
+      {/* bento stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 28 }}>
         <Stat value={n} label="Context cards" />
         <Stat value={revived.length} label="Revived" hot />
         <Stat value={archived.length} label="Archived" />
@@ -192,10 +197,10 @@ export default function Dashboard({ projects, navigate }) {
         <Stat value={`${avgCompletion}%`} label="Avg done" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
         {/* reasons */}
-        <div className="panel" style={{ padding: '22px 24px' }}>
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 16px' }}>
+        <div className="panel" style={{ padding: '24px 26px' }}>
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 18px', fontFamily: "'JetBrains Mono', monospace" }}>
             WHY PROJECTS STOPPED
           </p>
           {reasonRows.length ? (
@@ -206,13 +211,13 @@ export default function Dashboard({ projects, navigate }) {
         </div>
 
         {/* status */}
-        <div className="panel" style={{ padding: '22px 24px' }}>
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 16px' }}>
+        <div className="panel" style={{ padding: '24px 26px' }}>
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 18px', fontFamily: "'JetBrains Mono', monospace" }}>
             WHERE THEY STAND NOW
           </p>
           <Bars rows={statusRows} total={n} />
-          <div style={{ borderTop: '1px solid var(--border)', marginTop: 18, paddingTop: 16 }}>
-            <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 12px' }}>
+          <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 18 }}>
+            <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 14px', fontFamily: "'JetBrains Mono', monospace" }}>
               COMPLETION SPREAD
             </p>
             <Bands buckets={buckets} />
@@ -220,34 +225,35 @@ export default function Dashboard({ projects, navigate }) {
         </div>
       </div>
 
-      {/* why you really stop */}
+      {/* insights */}
       {insights.length > 0 && (
         <div
           className="panel fade-up"
           style={{
             '--d': '0.18s',
-            padding: '22px 24px',
-            marginBottom: 22,
-            border: '1px solid var(--accent-2)'
+            padding: '24px 26px',
+            marginBottom: 24,
+            borderLeft: '3px solid var(--accent-2)'
           }}
         >
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 14px' }}>
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 18px', fontFamily: "'JetBrains Mono', monospace" }}>
             WHAT YOUR SHELF TOLD ME
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 22 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24 }}>
             {insights.map((i) => (
               <div key={i.k}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent-2)', fontWeight: 700, margin: '0 0 5px' }}>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent-2)', fontWeight: 700, margin: '0 0 6px', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconInsight />
                   {i.k}
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Georgia, serif',
+                    fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: 16,
                     fontWeight: 700,
                     color: 'var(--text)',
                     lineHeight: 1.35,
-                    margin: '0 0 6px'
+                    margin: '0 0 8px'
                   }}
                 >
                   {i.title}
@@ -261,20 +267,20 @@ export default function Dashboard({ projects, navigate }) {
 
       {/* nudge + highlight */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
-        <div className="panel" style={{ padding: '22px 24px', border: '1px solid var(--accent-2)' }}>
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 10px' }}>
+        <div className="panel" style={{ padding: '24px 26px', borderLeft: '3px solid var(--accent-3)' }}>
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 12px', fontFamily: "'JetBrains Mono', monospace" }}>
             LONGEST WAITING
           </p>
           {longestIdle ? (
             <>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: 'var(--text)', margin: '0 0 6px' }}>
+              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, color: 'var(--text)', margin: '0 0 8px' }}>
                 {longestIdle.name} — {daysIdle(longestIdle)} days idle
               </p>
-              <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 16px' }}>
+              <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 20px', lineHeight: 1.5 }}>
                 {reasonLabel(longestIdle.reason)} · {longestIdle.completion}% complete ·{' '}
                 {longestIdle.remaining?.length || 0} items left. Decide it now, or reopen it with full context.
               </p>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
                 <button
                   className="btn-primary"
                   type="button"
@@ -297,14 +303,14 @@ export default function Dashboard({ projects, navigate }) {
           )}
         </div>
 
-        <div className="panel" style={{ padding: '22px 24px' }}>
-          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 10px' }}>
+        <div className="panel" style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <p style={{ fontSize: 11, letterSpacing: 2.6, color: 'var(--accent)', fontWeight: 700, margin: '0 0 12px', fontFamily: "'JetBrains Mono', monospace" }}>
             REVIVAL RATE
           </p>
-          <p style={{ fontFamily: 'Georgia, serif', fontSize: 44, fontWeight: 700, color: 'var(--accent)', margin: 0 }}>
+          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 56, fontWeight: 700, color: 'var(--accent)', margin: 0, lineHeight: 1 }}>
             {n ? Math.round((revived.length / n) * 100) : 0}%
           </p>
-          <p style={{ fontSize: 14, color: 'var(--muted)', margin: '6px 0 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: 'var(--muted)', margin: '12px 0 0', lineHeight: 1.5 }}>
             {revived.length} of {n} projects came back off the shelf. Context cards make restarting
             cheaper than starting over — that is the whole point.
           </p>

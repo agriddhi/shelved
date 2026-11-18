@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Home from './views/Home.jsx';
 import ClosureFlow from './views/ClosureFlow.jsx';
 import Profile from './views/Profile.jsx';
@@ -6,9 +6,14 @@ import ThinkingSpace from './views/ThinkingSpace.jsx';
 import Decision from './views/Decision.jsx';
 import ArchiveView from './views/ArchiveView.jsx';
 import Dashboard from './views/Dashboard.jsx';
-import { useTheme, THEME_NAMES } from './hooks/useTheme.js';
-import { useShortcuts } from './hooks/hooks.js';
-import { loadProjects, saveProjects } from './lib/store.js';
+import { useTheme } from './hooks/useTheme.js';
+import { useShortcuts, useMedia } from './hooks/hooks.js';
+import PageTransition, { usePageDirection } from './components/PageTransition.jsx';
+import ThemePicker from './components/ThemePicker.jsx';
+import { StreakBadge, ShortcutsModal, useToast } from './components/Extras.jsx';
+import ShelvingOverlay from './components/ShelvingOverlay.jsx';
+import { loadProjects, saveProjects, bumpShelfStreak } from './lib/store.js';
+import { burst, haptic } from './lib/fx.js';
 
 const NAV = [
   { key: 'home', label: 'Home', icon: '⌂' },
@@ -16,37 +21,110 @@ const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: '◈' }
 ];
 
-const SHORTCUTS = [
-  ['N', 'Close a new project'],
-  ['A', 'Go to the archive'],
-  ['D', 'Go to the dashboard'],
-  ['1–9', 'Jump to that project'],
-  ['Esc', 'Back to the shelf'],
-  ['?', 'Toggle this help']
-];
-
 export default function App() {
   const [projects, setProjects] = useState(() => loadProjects());
   const [view, setView] = useState({ name: 'home' });
-  const [toast, setToast] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
-  const { theme, mode, toggleMode, cycleTheme } = useTheme();
+  const [soundOn, setSoundOn] = useState(() => {
+    try { return localStorage.getItem('shelved.sound') === 'on'; } catch { return false; }
+  });
+  const [shelving, setShelving] = useState(null);
+  const [thudKey, setThudKey] = useState(0);
+  const [revivingId, setRevivingId] = useState(null);
+  const toast = useToast();
+  const { theme, mode, toggleMode, cycleTheme, setTheme, themes } = useTheme();
+  const isMobile = useMedia('(max-width: 640px)');
+  const shelfRef = useRef(null);
+  const scrollCache = useRef({});
+  const soundToggle = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    try { localStorage.setItem('shelved.sound', next ? 'on' : 'off'); } catch { /* ignore */ }
+  };
 
   useEffect(() => saveProjects(projects), [projects]);
-  useEffect(() => {
-    if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), 3200);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const navigate = (name, id) => setView({ name, id });
   const current = useMemo(() => projects.find((p) => p.id === view.id), [projects, view.id]);
+  const dir = usePageDirection(view.name);
   const sortedShelf = useMemo(
     () => [...projects].sort((a, b) => (b.lastTouchedAt || 0) - (a.lastTouchedAt || 0)),
     [projects]
   );
 
-  const notify = (msg) => setToast({ id: Date.now(), msg });
+  // remember scroll position per view, restore when returning
+  useEffect(() => {
+    window.scrollTo(0, scrollCache.current[view.name] || 0);
+    return () => {
+      scrollCache.current[view.name] = window.scrollY;
+    };
+  }, [view.name, view.id]);
+
+  const notify = (msg, opts) => toast(msg, opts);
+
+  /** Merge or insert a project. User-touched projects lose the seed flag so they persist. */
+  const upsert = (proj) => {
+    const cleaned = { ...proj };
+    delete cleaned.__seed;
+    bumpShelfStreak();
+    setProjects((list) => {
+      const i = list.findIndex((p) => p.id === cleaned.id);
+      if (i === -1) return [cleaned, ...list];
+      const next = [...list];
+      next[i] = cleaned;
+      return next;
+    });
+    return cleaned;
+  };
+
+  const remove = (id) => setProjects((list) => list.filter((p) => p.id !== id));
+
+  // ClosureFlow hands us the project + measured card rect before navigating
+  const onShelve = (project, rect, elapsed) => {
+    const cleaned = upsert(project);
+    toast(`“${cleaned.name}” shelved${elapsed ? ` in ${elapsed}` : ''} ✓`);
+    setShelving({ project: cleaned, rect });
+    navigate('home');
+  };
+
+  // shelf swipe actions (mobile) + profile reopen path share the revive effect
+  const revive = (p, prev) => {
+    setRevivingId(p.id);
+    burst();
+    haptic(16);
+    toast(`“${p.name}” is back on your desk.`, {
+      ms: 5000,
+      action: { label: 'Undo', run: () => upsert(prev) }
+    });
+    window.setTimeout(() => setRevivingId(null), 1800);
+  };
+
+  const onAction = (type, p) => {
+    const now = Date.now();
+    const prev = { ...p };
+    if (type === 'restart') {
+      const next = {
+        ...p,
+        status: 'active',
+        lastTouchedAt: now,
+        reopenCount: (p.reopenCount || 0) + 1,
+        timeline: [...(p.timeline || []), { type: 'revisited', at: now }]
+      };
+      upsert(next);
+      revive(next, prev);
+    } else if (type === 'archive') {
+      upsert({
+        ...p,
+        status: 'archived',
+        decision: 'archive',
+        lastTouchedAt: now,
+        timeline: [...(p.timeline || []), { type: 'decision', at: now, option: 'archive' }]
+      });
+      toast(`“${p.name}” archived ✓`, {
+        action: { label: 'Undo', run: () => upsert(prev) }
+      });
+    }
+  };
 
   // keyboard shortcuts — never fire while typing in a field
   useShortcuts({
@@ -54,27 +132,16 @@ export default function App() {
     onArchive: () => navigate('archive'),
     onDashboard: () => navigate('dashboard'),
     onJump: (i) => {
+      if (view.name === 'home') {
+        shelfRef.current?.jump(i);
+        return;
+      }
       const target = sortedShelf[i];
       if (target) navigate('profile', target.id);
     },
     onHome: () => (helpOpen ? setHelpOpen(false) : navigate('home')),
     onHelp: () => setHelpOpen((v) => !v)
   });
-
-  /** Merge or insert a project. User-touched projects lose the seed flag so they persist. */
-  const upsert = (proj) => {
-    const cleaned = { ...proj };
-    delete cleaned.__seed;
-    return setProjects((list) => {
-      const i = list.findIndex((p) => p.id === cleaned.id);
-      if (i === -1) return [cleaned, ...list];
-      const next = [...list];
-      next[i] = cleaned;
-      return next;
-    });
-  };
-
-  const remove = (id) => setProjects((list) => list.filter((p) => p.id !== id));
 
   const shared = {
     projects,
@@ -83,25 +150,38 @@ export default function App() {
     navigate,
     notify,
     theme: mode,
-    view
+    view,
+    onAction,
+    onShelve
   };
 
   let screen = null;
-  if (view.name === 'home') screen = <Home {...shared} />;
+  if (view.name === 'home')
+    screen = (
+      <Home
+        {...shared}
+        shelfRef={shelfRef}
+        shelvingId={shelving?.project.id}
+        revivingId={revivingId}
+        thudKey={thudKey}
+      />
+    );
   else if (view.name === 'closure') screen = <ClosureFlow {...shared} />;
   else if (view.name === 'profile')
-    screen = current ? <Profile {...shared} project={current} /> : <Home {...shared} />;
+    screen = current ? <Profile {...shared} project={current} /> : <Home {...shared} shelfRef={shelfRef} />;
   else if (view.name === 'thinking')
-    screen = current ? <ThinkingSpace {...shared} project={current} /> : <Home {...shared} />;
+    screen = current ? <ThinkingSpace {...shared} project={current} /> : <Home {...shared} shelfRef={shelfRef} />;
   else if (view.name === 'decision')
-    screen = current ? <Decision {...shared} project={current} /> : <Home {...shared} />;
-  else if (view.name === 'archive') screen = <ArchiveView {...shared} />;
+    screen = current ? <Decision {...shared} project={current} /> : <Home {...shared} shelfRef={shelfRef} />;
+  else if (view.name === 'archive') screen = <ArchiveView {...shared} initialReason={view.id} />;
   else if (view.name === 'dashboard') screen = <Dashboard {...shared} />;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-root" style={{ display: 'flex', minHeight: '100vh' }}>
+      <div className="ambient" aria-hidden="true" />
+
       {/* sidebar */}
-      <aside
+      <aside className="sidebar"
         style={{
           width: 232,
           flexShrink: 0,
@@ -110,7 +190,7 @@ export default function App() {
           padding: '26px 16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 6
+          gap: 8
         }}
       >
         <div
@@ -119,7 +199,7 @@ export default function App() {
             fontSize: 25,
             fontWeight: 700,
             color: 'var(--text)',
-            padding: '0 10px 20px',
+            padding: '0 10px 14px',
             cursor: 'pointer'
           }}
           onClick={() => navigate('home')}
@@ -129,7 +209,7 @@ export default function App() {
           Shelved
         </div>
 
-        <button className="btn-primary" type="button" onClick={() => navigate('closure')} style={{ marginBottom: 14 }}>
+        <button className="btn-primary" type="button" onClick={() => navigate('closure')} style={{ marginBottom: 6 }}>
           + New closure
         </button>
 
@@ -161,49 +241,29 @@ export default function App() {
         })}
 
         <div style={{ flex: 1 }} />
-        <p style={{ fontSize: 11, color: 'var(--muted)', padding: '0 10px 10px', margin: 0 }}>
+        <StreakBadge />
+        <p style={{ fontSize: 11, color: 'var(--muted)', padding: '0 10px', margin: 0 }}>
           Your data never leaves this device.
         </p>
 
-        {/* theme cycle: wood → library → paper */}
+        <ThemePicker theme={theme} setTheme={setTheme} themes={themes} mode={mode} toggleMode={toggleMode} />
         <button
           type="button"
-          onClick={cycleTheme}
-          title="Cycle theme"
+          onClick={soundToggle}
+          aria-pressed={soundOn}
+          title={soundOn ? 'Sound on' : 'Sound off (default)'}
           style={{
             background: 'var(--surface-2)',
             color: 'var(--text)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: 13,
-            padding: '10px 14px',
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: 0.6,
-            cursor: 'pointer',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <span>{THEME_NAMES[theme] || 'Library'}</span>
-          <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>THEME →</span>
-        </button>
-        {/* mode toggle */}
-        <button
-          type="button"
-          onClick={toggleMode}
-          style={{
-            background: 'var(--surface-2)',
-            color: 'var(--text)',
-            border: '1px solid var(--border-strong)',
+            border: '1px solid var(--border)',
             borderRadius: 999,
-            padding: '9px 16px',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer'
+            padding: '7px 14px',
+            fontSize: 12.5,
+            cursor: 'pointer',
+            width: 'fit-content'
           }}
         >
-          {mode === 'dark' ? '☾ Dark' : '☀ Light'}
+          {soundOn ? '🔊 Sound on' : '🔇 Sound off'}
         </button>
         <p style={{ fontSize: 10.5, color: 'var(--muted)', textAlign: 'center', margin: '2px 0 0' }}>
           press <span className="kbd">?</span> for shortcuts
@@ -211,10 +271,10 @@ export default function App() {
       </aside>
 
       {/* main */}
-      <main style={{ flex: 1, minWidth: 0, padding: '40px 46px 90px', position: 'relative' }}>
-        <div key={view.name + (view.id || '')} className="fade-up" style={{ animationDuration: '.45s' }}>
+      <main className="app-main" style={{ flex: 1, minWidth: 0, padding: '40px 46px 90px', position: 'relative' }}>
+        <PageTransition viewKey={view.name + (view.id || '')} direction={dir}>
           {screen}
-        </div>
+        </PageTransition>
 
         <footer
           style={{
@@ -232,68 +292,40 @@ export default function App() {
         </footer>
       </main>
 
-      {/* keyboard help overlay */}
-      {helpOpen && (
-        <div
-          role="dialog"
-          aria-label="Keyboard shortcuts"
-          onClick={() => setHelpOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 45,
-            background: 'rgba(10, 0, 18, 0.6)',
-            backdropFilter: 'blur(3px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 22
-          }}
-        >
-          <div
-            className="panel pop-in"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 440, width: '100%', padding: '26px 30px' }}
-          >
-            <p style={{ fontSize: 11, letterSpacing: 3, color: 'var(--accent)', fontWeight: 700, margin: '0 0 14px' }}>
-              KEYBOARD SHORTCUTS
-            </p>
-            <div style={{ display: 'grid', gap: 12 }}>
-              {SHORTCUTS.map(([key, desc]) => (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span className="kbd">{key}</span>
-                  <span style={{ fontSize: 14.5, color: 'var(--body)' }}>{desc}</span>
-                </div>
-              ))}
-            </div>
-            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '16px 0 0', textAlign: 'center' }}>
-              Press <span className="kbd">?</span> or <span className="kbd">Esc</span> to close
-            </p>
+      {/* mobile bottom tab bar */}
+      {isMobile && (
+        <nav className="tabbar" role="tablist" aria-label="Primary navigation">
+          <div className="tabbar__inner">
+            <button role="tab" aria-selected={view.name === 'archive'} onClick={() => navigate('archive')}>
+              <span aria-hidden="true">◫</span>Archive
+            </button>
+            <button role="tab" aria-selected={view.name === 'home'} onClick={() => navigate('home')}>
+              <span aria-hidden="true">⌂</span>Home
+            </button>
+            <button className="tabbar__plus" role="tab" aria-label="Close a new project" onClick={() => navigate('closure')}>
+              +
+            </button>
+            <button role="tab" aria-selected={view.name === 'dashboard'} onClick={() => navigate('dashboard')}>
+              <span aria-hidden="true">◈</span>Dashboard
+            </button>
+            <button role="tab" aria-selected={helpOpen} onClick={() => setHelpOpen(true)}>
+              <span aria-hidden="true">?</span>Shortcuts
+            </button>
           </div>
-        </div>
+        </nav>
       )}
 
-      {/* toast */}
-      {toast && (
-        <div
-          key={toast.id}
-          className="toast-anim"
-          style={{
-            position: 'fixed',
-            bottom: 26,
-            left: '50%',
-            background: 'var(--cta-bg)',
-            color: 'var(--cta-text)',
-            borderRadius: 999,
-            padding: '12px 26px',
-            fontSize: 14.5,
-            fontWeight: 700,
-            zIndex: 50
-          }}
-        >
-          {toast.msg}
-        </div>
+      {/* shelving overlay — card flies into the shelf */}
+      {shelving && (
+        <ShelvingOverlay
+          project={shelving.project}
+          fromRect={shelving.rect}
+          onLanded={() => setThudKey((k) => k + 1)}
+          onDone={() => setShelving(null)}
+        />
       )}
+
+      <ShortcutsModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

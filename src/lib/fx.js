@@ -40,3 +40,58 @@ export function haptic(ms = 10) {
     /* silent */
   }
 }
+
+/** A low shelf impact — the book lands. */
+export function thud() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = ctx || new AC();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(96, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(52, ctx.currentTime + 0.16);
+    g.gain.setValueAtTime(0.11, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.24);
+  } catch {
+    /* silent */
+  }
+}
+
+/** Small celebratory dot-burst at an element (or screen centre if omitted). */
+export function burst(el) {
+  try {
+    haptic(12);
+    const host = el || document.body;
+    const rect = host.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const colors = ['#E3EF4F', '#F4ACB7', '#FFE5D9', '#D8E2DC', '#EEE3B0', '#5882E8'];
+    const layer = document.createElement('div');
+    layer.style.cssText = `position:fixed;left:0;top:0;z-index:999;pointer-events:none;`;
+    document.body.appendChild(layer);
+    for (let i = 0; i < 18; i++) {
+      const dot = document.createElement('span');
+      const size = 5 + Math.random() * 7;
+      const angle = (Math.PI * 2 * i) / 18 + Math.random() * 0.5;
+      const dist = 60 + Math.random() * 90;
+      dot.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;border-radius:50%;background:${colors[i % colors.length]};`;
+      layer.appendChild(dot);
+      dot.animate(
+        [
+          { transform: 'translate(-50%,-50%)', opacity: 1 },
+          { transform: `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist + 40}px))`, opacity: 0 }
+        ],
+        { duration: 700 + Math.random() * 300, easing: 'cubic-bezier(.15,.6,.4,1)', fill: 'forwards' }
+      );
+    }
+    setTimeout(() => layer.remove(), 1200);
+  } catch {
+    /* silent */
+  }
+}

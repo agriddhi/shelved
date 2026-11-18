@@ -8,16 +8,44 @@ export const STORAGE_KEY = 'shelved.projects.v1';
 
 /** The four reasons a project gets closed with. */
 export const REASONS = [
-  { key: 'complex', label: 'Too complex', desc: 'The scope outgrew the time you had', color: '#5882E8' },
-  { key: 'time', label: 'No time', desc: 'Exams, work and deadlines took over', color: '#EEE3B0' },
-  { key: 'lost', label: 'Lost interest', desc: 'The spark faded along the way', color: '#F4ACB7' },
-  { key: 'moved', label: 'Moved on', desc: 'A newer idea earned your evenings', color: '#D8E2DC' }
+  { key: 'complex', label: 'Too complex', desc: 'The scope outgrew the time you had', color: '#5882E8', icon: '🧩' },
+  { key: 'time', label: 'No time', desc: 'Exams, work and deadlines took over', color: '#EEE3B0', icon: '⏳' },
+  { key: 'lost', label: 'Lost interest', desc: 'The spark faded along the way', color: '#F4ACB7', icon: '🌀' },
+  { key: 'moved', label: 'Moved on', desc: 'A newer idea earned your evenings', color: '#D8E2DC', icon: '🚀' }
 ];
 
 export const reasonLabel = (key) => REASONS.find((r) => r.key === key)?.label || 'Unrecorded';
 export const reasonColor = (key) => REASONS.find((r) => r.key === key)?.color || '#D8E2DC';
 
 export const DAY = 86_400_000;
+
+/** Shelving streak — localStorage-backed, per spec. */
+export const STREAK_KEY = 'shelved.streak';
+export function readStreak() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STREAK_KEY) || '{"current":0,"lastDate":null}');
+    // streak broke if the last recorded day is older than yesterday
+    if (s.lastDate && s.lastDate !== new Date().toDateString() && s.lastDate !== new Date(Date.now() - DAY).toDateString()) {
+      return { current: 0, lastDate: s.lastDate };
+    }
+    return s;
+  } catch {
+    return { current: 0, lastDate: null };
+  }
+}
+export function bumpShelfStreak() {
+  try {
+    const s = readStreak();
+    const today = new Date().toDateString();
+    if (s.lastDate === today) return s.current;
+    const next = s.lastDate === new Date(Date.now() - DAY).toDateString() ? s.current + 1 : 1;
+    localStorage.setItem(STREAK_KEY, JSON.stringify({ current: next, lastDate: today }));
+    return next;
+  } catch {
+    return 0;
+  }
+}
+
 export const daysSince = (ts) => Math.max(0, Math.floor((Date.now() - (ts || Date.now())) / DAY));
 export const daysIdle = (p) => daysSince(p.lastTouchedAt || p.closedAt || p.createdAt);
 export const uid = () => `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -156,7 +184,7 @@ export const SEED = [
     timeline: [
       { type: 'started', at: now - 60 * DAY_MS },
       { type: 'closed', at: now - 12 * DAY_MS },
-      { type: 'decision', at: now - 10 * DAY_MS }
+      { type: 'decision', at: now - 10 * DAY_MS, option: 'archive' }
     ],
     createdAt: now - 60 * DAY_MS,
     lastTouchedAt: now - 12 * DAY_MS,
@@ -169,6 +197,25 @@ export const SEED = [
 /** Load the archive from localStorage (seed on first run).
  *  Demo data is evergreen: a shelf containing only seed projects is
  *  regenerated each session so "34 days idle" never goes stale. */
+/** Normalize anything stored under either naming convention, and synthesize
+ *  a context description when one is missing. */
+function normalizeProject(p) {
+  if (!p || typeof p !== 'object') return p;
+  const done = Array.isArray(p.done) ? p.done : Array.isArray(p.doneList) ? p.doneList : [];
+  const remaining = Array.isArray(p.remaining) ? p.remaining : [];
+  const goal = p.goal || '';
+  let description = p.description;
+  if (!description) {
+    const bits = [];
+    if (goal) bits.push(`Started to ${goal}.`);
+    if (done.length) bits.push(`Completed: ${done.join(', ')}.`);
+    if (remaining.length) bits.push(`Still remaining: ${remaining.join(', ')}.`);
+    bits.push(`Closed at ${p.completion ?? 50}% complete.`);
+    description = bits.join(' ');
+  }
+  return { ...p, done, remaining, description };
+}
+
 export function loadProjects() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -176,7 +223,7 @@ export function loadProjects() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length) {
         if (parsed.every((p) => p.__seed)) return SEED;
-        return parsed;
+        return parsed.map(normalizeProject);
       }
     }
   } catch {

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { CARD_FACES, REASONS, reasonLabel, daysIdle, daysSince, toMarkdown } from '../lib/store.js';
 import { exportShelf } from '../lib/exportShelf.js';
 import { useRecentSearches, useSelection } from '../hooks/hooks.js';
+import ResumeRing from '../components/ResumeRing.jsx';
 
 const STATUSES = [
   { key: 'all', label: 'All' },
@@ -10,20 +11,19 @@ const STATUSES = [
   { key: 'active', label: 'Active' }
 ];
 
-const nightInk = '#290044';
-
 const chip = (color) => ({
   display: 'inline-flex',
   alignItems: 'center',
   gap: 6,
   fontSize: 10.5,
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: 0.4,
-  padding: '3px 10px',
-  borderRadius: 30,
-  color: nightInk,
+  padding: '4px 12px',
+  borderRadius: 999,
+  color: 'var(--ink)',
   background: color,
-  border: '1px solid rgba(41,0,68,.3)'
+  border: '1px solid rgba(255,255,255,0.15)',
+  fontFamily: "'JetBrains Mono', monospace"
 });
 
 function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
@@ -35,6 +35,7 @@ function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
       : p.status === 'archived'
         ? `Archived · idle ${idle}d`
         : `Paused ${idle}d ago`;
+  const reasonColor = REASONS.find((r) => r.key === p.reason)?.color || 'var(--surface-hover)';
 
   if (selectMode) {
     return (
@@ -42,12 +43,15 @@ function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
         type="button"
         onClick={() => onToggle(p.id)}
         aria-pressed={selected}
+        className="fade-up"
         style={{
+          '--d': `${Math.min(index, 12) * 0.04}s`,
           position: 'relative',
           textAlign: 'left',
           background: face,
-          color: nightInk,
-          border: selected ? '3px solid var(--accent-2)' : '2px solid rgba(41,0,68,.35)',
+          color: 'var(--ink)',
+          border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
+          borderTop: `3px solid ${reasonColor}`,
           borderRadius: 16,
           padding: '18px 18px 16px',
           cursor: 'pointer',
@@ -55,37 +59,40 @@ function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
           flexDirection: 'column',
           gap: 10,
           minHeight: 184,
-          transition: 'transform .18s ease, box-shadow .18s ease',
-          boxShadow: selected ? '0 0 0 4px rgba(138,42,120,.35)' : 'none'
+          transition: 'transform .2s ease, box-shadow .2s ease',
+          boxShadow: selected ? '0 0 0 4px rgba(255,107,74,0.2)' : 'none'
         }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.zIndex = '30'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.zIndex = ''; }}
       >
         <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <span style={chip(REASONS.find((r) => r.key === p.reason)?.color || '#D8E2DC')}>
+          <span style={chip(reasonColor)}>
             {reasonLabel(p.reason)}
           </span>
           <span
             aria-hidden="true"
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: 8,
-              border: '2px solid rgba(41,0,68,.45)',
-              background: selected ? 'var(--accent-2)' : 'rgba(41,0,68,.08)',
-              color: selected ? '#FDFAF6' : 'transparent',
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              border: `2px solid ${selected ? 'var(--accent)' : 'var(--border-strong)'}`,
+              background: selected ? 'var(--accent)' : 'transparent',
+              color: selected ? 'var(--cta-text)' : 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 800,
-              fontSize: 15
+              fontSize: 14,
+              fontFamily: "'Space Grotesk', sans-serif"
             }}
           >
             ✓
           </span>
         </span>
-        <span style={{ fontFamily: 'Georgia, serif', fontSize: 19, fontWeight: 700, lineHeight: 1.15 }}>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 19, fontWeight: 700, lineHeight: 1.15, color: 'var(--ink)' }}>
           {p.name}
         </span>
-        <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'rgba(41,0,68,.75)', flex: 1 }}>{p.goal}</span>
+        <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'var(--body)', flex: 1 }}>{p.goal}</span>
       </button>
     );
   }
@@ -94,12 +101,15 @@ function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
     <button
       type="button"
       onClick={onOpen}
+      className="fade-up"
       style={{
+        '--d': `${Math.min(index, 12) * 0.04}s`,
         position: 'relative',
         textAlign: 'left',
         background: face,
-        color: nightInk,
-        border: '2px solid rgba(41,0,68,.35)',
+        color: 'var(--ink)',
+        border: '1px solid var(--border)',
+        borderTop: `3px solid ${reasonColor}`,
         borderRadius: 16,
         padding: '18px 18px 16px',
         cursor: 'pointer',
@@ -107,48 +117,75 @@ function ArchiveCard({ p, index, onOpen, selectMode, selected, onToggle }) {
         flexDirection: 'column',
         gap: 10,
         minHeight: 184,
-        transition: 'transform .18s ease'
+        transition: 'transform .2s ease, box-shadow .2s ease'
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'rotate(0deg) translateY(-10px) scale(1.03)'; e.currentTarget.style.zIndex = '30'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.zIndex = ''; }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.25)'; e.currentTarget.style.zIndex = '30'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.zIndex = ''; }}
     >
       <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <span style={chip(REASONS.find((r) => r.key === p.reason)?.color || '#D8E2DC')}>
+        <span style={chip(reasonColor)}>
           {reasonLabel(p.reason)}
         </span>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(41,0,68,.6)' }}>
-          {p.status.toUpperCase()}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: 'var(--muted)' }}>
+            {p.status.toUpperCase()}
+          </span>
+          <ResumeRing project={p} size={26} showBadge={false} />
         </span>
       </span>
-      <span style={{ fontFamily: 'Georgia, serif', fontSize: 19, fontWeight: 700, lineHeight: 1.15 }}>
+      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 19, fontWeight: 700, lineHeight: 1.15, color: 'var(--ink)' }}>
         {p.name}
       </span>
-      <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'rgba(41,0,68,.75)', flex: 1 }}>{p.goal}</span>
+      <span style={{ fontSize: 12.5, lineHeight: 1.35, color: 'var(--body)', flex: 1 }}>{p.goal}</span>
       <span>
         <span
           style={{
             display: 'block',
-            height: 7,
-            borderRadius: 6,
-            background: 'rgba(41,0,68,.16)',
+            height: 6,
+            borderRadius: 3,
+            background: 'var(--surface-2)',
             overflow: 'hidden',
-            marginBottom: 6
+            marginBottom: 6,
+            border: '1px solid var(--border)'
           }}
         >
-          <span style={{ display: 'block', height: '100%', width: `${p.completion}%`, background: '#500071', borderRadius: 6 }} />
+          <span
+            style={{
+              display: 'block',
+              height: '100%',
+              width: `${p.completion}%`,
+              background: 'linear-gradient(90deg, var(--accent-2), var(--accent))',
+              borderRadius: 3,
+              transition: 'width 0.5s ease'
+            }}
+          />
         </span>
-        <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
-          <span>{p.completion}% done</span>
-          <span style={{ color: 'rgba(41,0,68,.65)' }}>{meta}</span>
+        <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+          <span style={{ color: 'var(--ink)' }}>{p.completion}% done</span>
+          <span style={{ color: 'var(--muted)' }}>{meta}</span>
         </span>
       </span>
     </button>
   );
 }
 
-export default function ArchiveView({ projects, upsert, remove, navigate, notify }) {
+// Empty state ghost icon
+const IconGhost = () => (
+  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
+    <path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+  </svg>
+);
+
+// Search icon
+const IconSearch = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+
+export default function ArchiveView({ projects, upsert, remove, navigate, notify, initialReason }) {
   const [status, setStatus] = useState('all');
-  const [reason, setReason] = useState('all');
+  const [reason, setReason] = useState(() => initialReason || 'all');
   const [query, setQuery] = useState('');
   const [selectMode, setSelectMode] = useState(false);
   const recents = useRecentSearches(5);
@@ -178,9 +215,22 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
     active: projects.filter((p) => p.status === 'active').length
   };
 
-  const commitSearch = (q) => {
-    addRecent(q);
+  const selectAllVisible = () => {
+    if (filtered.length === 0) return;
+    const allSelected = filtered.every((p) => selection.has(p.id));
+    if (allSelected) selection.clear();
+    else selection.set(filtered.map((p) => p.id));
   };
+
+  const selectedSummary = useMemo(() => {
+    const chosen = projects.filter((p) => selection.has(p.id));
+    const s = chosen.filter((p) => p.status === 'stopped').length;
+    const a = chosen.filter((p) => p.status === 'archived').length;
+    const act = chosen.filter((p) => p.status === 'active').length;
+    return `${s} stopped · ${a} archived · ${act} active`;
+  }, [projects, selection]);
+
+  const commitSearch = (q) => addRecent(q);
 
   const bulkArchive = () => {
     const now = Date.now();
@@ -191,6 +241,25 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
       }
     });
     notify(`${selection.count} project${selection.count === 1 ? '' : 's'} archived ✓`);
+    selection.clear();
+    setSelectMode(false);
+  };
+
+  const bulkRestart = () => {
+    const now = Date.now();
+    selection.sel.forEach((id) => {
+      const p = projects.find((x) => x.id === id);
+      if (p) {
+        upsert({
+          ...p,
+          status: 'active',
+          lastTouchedAt: now,
+          reopenCount: (p.reopenCount || 0) + 1,
+          timeline: [...(p.timeline || []), { type: 'revisited', at: now }]
+        });
+      }
+    });
+    notify(`${selection.count} project${selection.count === 1 ? '' : 's'} revived ✓`);
     selection.clear();
     setSelectMode(false);
   };
@@ -209,27 +278,26 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
   };
 
   return (
-    <div>
-      <p style={{ fontSize: 11.5, letterSpacing: 3.2, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
+    <div style={{ maxWidth: 1200 }}>
+      <p style={{ fontSize: 11, letterSpacing: 3.2, color: 'var(--accent)', fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
         ORGANIZED ARCHIVE
       </p>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 34, color: 'var(--text)', margin: '8px 0 4px' }}>
+      <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 40, color: 'var(--text)', margin: '12px 0 6px', letterSpacing: '-0.03em' }}>
         Every project, kept with its story.
       </h1>
-      <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 22px' }}>
+      <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 28px', lineHeight: 1.6 }}>
         Filter by status, stop reason or keyword. Nothing is ever deleted — only shelved.
       </p>
 
-      {/* filters */}
+      {/* floating filter bar */}
       <div
-        className="panel"
+        className="floating-bar"
         style={{
           display: 'flex',
           gap: 12,
           alignItems: 'center',
           flexWrap: 'wrap',
-          padding: '14px 18px',
-          marginBottom: 10
+          marginBottom: 16
         }}
       >
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -246,7 +314,9 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
                 padding: '8px 16px',
                 fontSize: 13.5,
                 fontWeight: status === s.key ? 700 : 500,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontFamily: "'Inter', sans-serif"
               }}
             >
               {s.label} ({counts[s.key]})
@@ -261,10 +331,10 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
             background: 'var(--surface-2)',
             color: 'var(--text)',
             border: '1px solid var(--border)',
-            borderRadius: 10,
+            borderRadius: 12,
             padding: '9px 12px',
             fontSize: 13.5,
-            fontFamily: 'inherit'
+            fontFamily: "'Inter', sans-serif"
           }}
         >
           <option value="all">All reasons</option>
@@ -275,32 +345,40 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
           ))}
         </select>
 
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && commitSearch(query)}
-          placeholder="Search name or goal… (Enter saves it)"
-          style={{
-            flex: '1 1 200px',
-            minWidth: 180,
-            background: 'var(--surface-2)',
-            color: 'var(--text)',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            padding: '9px 14px',
-            fontSize: 13.5,
-            outline: 'none',
-            fontFamily: 'inherit'
-          }}
-        />
+        <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
+          <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}>
+            <IconSearch />
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && commitSearch(query)}
+            placeholder="Search name or goal…"
+            style={{
+              width: '100%',
+              background: 'var(--surface-2)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              borderRadius: 999,
+              padding: '10px 14px 10px 40px',
+              fontSize: 13.5,
+              outline: 'none',
+              fontFamily: "'Inter', sans-serif",
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+            }}
+            onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(255,107,74,0.15)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
 
-        <button className="btn-ghost" type="button" style={{ padding: '9px 16px', fontSize: 13 }} onClick={exportAll}>
-          ⤓ Export shelf (ZIP)
+        <button className="icon-btn" type="button" onClick={exportAll}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Export ZIP
         </button>
         <button
-          className={selectMode ? 'btn-primary' : 'btn-quiet'}
+          className={selectMode ? 'btn-primary' : 'icon-btn'}
           type="button"
-          style={{ padding: '9px 16px', fontSize: 13 }}
+          style={{ padding: selectMode ? '10px 18px' : undefined, fontSize: 13 }}
           onClick={() => { setSelectMode(!selectMode); selection.clear(); }}
         >
           {selectMode ? 'Done' : 'Spring clean'}
@@ -310,7 +388,7 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
       {/* recent searches */}
       {recentItems.length > 0 && !selectMode && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', margin: '0 0 16px' }}>
-          <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1.4, textTransform: 'uppercase' }}>Recent</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1.4, textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace" }}>Recent</span>
           {recentItems.map((q) => (
             <button
               key={q}
@@ -336,19 +414,25 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
       {/* batch action toolbar */}
       {selectMode && (
         <div
-          className="panel"
+          className="panel slide-in-right"
           style={{
             display: 'flex',
             gap: 12,
             alignItems: 'center',
-            padding: '12px 18px',
+            padding: '14px 20px',
             margin: '0 0 16px',
             border: '1px solid var(--accent-2)'
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-            {selection.count} selected
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontFamily: "'JetBrains Mono', monospace" }}>
+            {selection.count} selected <span style={{ color: 'var(--muted)', fontWeight: 500 }}>· {selectedSummary}</span>
           </span>
+          <button className="btn-quiet" type="button" onClick={selectAllVisible} style={{ fontSize: 12.5, padding: '8px 14px' }}>
+            {filtered.every((p) => selection.has(p.id)) && filtered.length ? 'Deselect all' : 'Select all visible'}
+          </button>
+          <button className="btn-primary" type="button" style={{ padding: '9px 18px', fontSize: 13 }} onClick={bulkRestart} disabled={!selection.count}>
+            Restart selected
+          </button>
           <button className="btn-primary" type="button" style={{ padding: '9px 18px', fontSize: 13 }} onClick={bulkArchive} disabled={!selection.count}>
             Archive selected
           </button>
@@ -365,7 +449,8 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
               fontSize: 13,
               fontWeight: 700,
               cursor: 'pointer',
-              opacity: selection.count ? 1 : 0.4
+              opacity: selection.count ? 1 : 0.4,
+              transition: 'all 0.2s ease'
             }}
           >
             Delete selected
@@ -378,19 +463,23 @@ export default function ArchiveView({ projects, upsert, remove, navigate, notify
 
       {/* results */}
       {filtered.length === 0 ? (
-        <div className="panel" style={{ padding: '40px 30px', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'Georgia, serif', fontSize: 20, color: 'var(--text)', margin: '0 0 6px' }}>
+        <div className="panel" style={{ padding: '60px 30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <IconGhost />
+          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: 'var(--text)', margin: '0 0 6px', fontWeight: 600 }}>
             Nothing matches those filters.
           </p>
-          <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 18px' }}>
+          <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 18px', lineHeight: 1.6 }}>
             Try clearing the search, or close a new project to fill the shelf.
           </p>
           <button className="btn-primary" type="button" onClick={() => navigate('closure')}>
-            + New closure
+            Close a new project
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+        <div
+          key={`${status}-${reason}-${query}-${selectMode}`}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18 }}
+        >
           {filtered.map((p, i) => (
             <ArchiveCard
               key={p.id}

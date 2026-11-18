@@ -57,12 +57,16 @@ export function useTilt(max = 7) {
   return { ref, handlers: { onMouseMove, onMouseLeave } };
 }
 
-// Tick every 400ms while a hold is active (desktop tone if sound is on, haptic on mobile)
+// HoldButton haptics: first tick at 400ms, then every 200ms while held
 export function useHoldTicks(active) {
   useEffect(() => {
     if (!active) return undefined;
-    tick(); haptic(8);
-    const id = setInterval(() => { tick(); haptic(8); }, 400);
+    tick();
+    haptic(8);
+    const id = setInterval(() => {
+      tick();
+      haptic(8);
+    }, 200);
     return () => clearInterval(id);
   }, [active]);
 }

@@ -12,6 +12,12 @@ export async function exportShelf(projects, toMarkdown) {
   const zip = new JSZip();
   const used = new Set();
   const folder = zip.folder('projects');
+  const index = ['# Shelved — shelf export', '', `Exported ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} · ${list.length} project${list.length === 1 ? '' : 's'}`, ''];
+  list.forEach((p, i) => {
+    const name = p.name || `project-${i}`;
+    const file = `projects/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project'}.md`;
+    index.push(`${i + 1}. **${name}** — ${p.goal || 'no goal recorded'} ([${file}](${file}))`);
+  });
   for (const p of list) {
     const base = slug(p.name);
     let name = base;
@@ -20,6 +26,7 @@ export async function exportShelf(projects, toMarkdown) {
     used.add(name);
     folder.file(`${name}.md`, toMarkdown(p));
   }
+  zip.file('_README.md', index.join('\n'));
   zip.file('shelf.json', JSON.stringify(list, null, 2));
   const blob = await zip.generateAsync({ type: 'blob' });
   const url = URL.createObjectURL(blob);

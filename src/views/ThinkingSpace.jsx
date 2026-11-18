@@ -60,7 +60,7 @@ export default function ThinkingSpace({ project: p, upsert, navigate, notify }) 
       <p style={{ fontSize: 11.5, letterSpacing: 3, color: 'var(--accent)', fontWeight: 700, margin: 0 }}>
         THINKING SPACE
       </p>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 32, color: 'var(--text)', margin: '8px 0 4px' }}>
+      <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 32, color: 'var(--text)', margin: '8px 0 4px' }}>
         {p.name}
       </h1>
       <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 22px' }}>

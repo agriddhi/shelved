@@ -1,141 +1,145 @@
 @import 'tailwindcss';
 
-/* â”€â”€ Shelved themes v5 â€” wood | library | paper Ã— dark | light â”€â”€
-   Every variant is built from the KairoAeonTech palette.
-   Default = library dark (the shipped look).                       */
+/* â”€â”€ Shelved themes â€” plum | indigo Ã— dark | light â”€â”€
+   Plum (default), Indigo â€” from the KairoAeonTech palette.
+   Compatibility aliases keep every existing component working. */
 
 :root,
-:root[data-theme='library'][data-mode='dark'] {
-  --bg: #6e1f7c;
-  --bg-dots: rgba(255, 255, 255, 0.055);
-  --dot-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23ffffff' fill-opacity='0.055'/%3E%3C/svg%3E");
-  --surface: #2c0e38;
-  --surface-2: #40164d;
-  --surface-hover: #511f5c;
-  --border: rgba(255, 255, 255, 0.16);
-  --border-strong: rgba(255, 255, 255, 0.34);
-  --text: #eee3b0;
-  --body: #ffe5d9;
-  --muted: #f6cdd9;
-  --accent: #e3ef4f;
+:root[data-theme='plum'][data-mode='dark'] {
+  color-scheme: dark;
+  --radius: 14px;
+  --ok: #3f9e6a;
+  --glow: #e3ef4f;
+  --dust-rgb: 216 205 216;
+
+  --bg: #290044;
+  --surface: #3c005b;
+  --surface-2: #4a0169;
+  --surface-hover: #55046d;
+  --border: rgba(255, 229, 217, 0.16);
+  --border-strong: rgba(255, 229, 217, 0.34);
+  --text: #ffe5d9;
+  --body: #ffcad4;
+  --muted: #d8e2dc;
+  --accent: #f4acb7;
+  --accent-text: #290044;
   --accent-2: #5882e8;
-  --cta-bg: #e3ef4f;
+  --accent-3: #ff9f1c;
+  --cta-bg: #f4acb7;
   --cta-text: #290044;
   --ink: #290044;
-  --plank: #5a3a22;
-  --plank-edge: #7a5435;
+  --edge: rgb(255 229 217 / 0.3);
+  --shelf-back: #190029;
+  --board: #8a2a78;
+  --shadow: 0 12px 30px rgb(0 0 0 / 0.5);
+
+  --spine-0: #f4acb7; --spine-1: #9d8189; --spine-2: #5882e8; --spine-3: #d8e2dc; --spine-4: #ffcad4;
+  --spine-0-fg: #290044; --spine-1-fg: #290044; --spine-2-fg: #290044; --spine-3-fg: #290044; --spine-4-fg: #290044;
+
+  --tag-complex: #5882e8; --tag-time: #ffe5d9; --tag-lost: #f4acb7; --tag-moved: #d8e2dc;
 }
 
-:root[data-theme='library'][data-mode='light'] {
-  --bg: #fdfaf6;
-  --bg-dots: rgba(41, 0, 68, 0.05);
-  --dot-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23290044' fill-opacity='0.055'/%3E%3C/svg%3E");
-  --surface: #ffffff;
-  --surface-2: #f3eee6;
-  --surface-hover: #eae4d8;
-  --border: rgba(41, 0, 68, 0.14);
+:root[data-theme='plum'][data-mode='light'] {
+  color-scheme: light;
+  --radius: 14px;
+  --ok: #3f9e6a;
+  --glow: #e3ef4f;
+  --dust-rgb: 150 140 150;
+
+  --bg: #ffe5d9;
+  --surface: #fff2ec;
+  --surface-2: #fbdcd0;
+  --surface-hover: #f3cfc2;
+  --border: rgba(41, 0, 68, 0.16);
   --border-strong: rgba(41, 0, 68, 0.32);
   --text: #290044;
-  --body: #4a3556;
-  --muted: #837083;
-  --accent: #0f42c0;
-  --accent-2: #8a2a78;
-  --cta-bg: #1f06ac;
-  --cta-text: #eee3b0;
-  --ink: #290044;
-  --plank: #6b4a2f;
-  --plank-edge: #8a5f3c;
-}
-
-/* â”€â”€ wood â€” warm walnut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-:root[data-theme='wood'][data-mode='dark'] {
-  --bg: #3e2a1d;
-  --bg-dots: rgba(255, 229, 217, 0.055);
-  --dot-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23ffffff' fill-opacity='0.055'/%3E%3C/svg%3E");
-  --surface: #221206;
-  --surface-2: #34200f;
-  --surface-hover: #422a17;
-  --border: rgba(255, 229, 217, 0.15);
-  --border-strong: rgba(255, 229, 217, 0.33);
-  --text: #eee3b0;
-  --body: #ffe5d9;
-  --muted: #d9bba0;
-  --accent: #e3ef4f;
-  --accent-2: #f4acb7;
-  --cta-bg: #e3ef4f;
-  --cta-text: #290044;
-  --ink: #290044;
-  --plank: #6b4a2f;
-  --plank-edge: #8a5f3c;
-}
-
-:root[data-theme='wood'][data-mode='light'] {
-  --bg: #f4e8da;
-  --bg-dots: rgba(62, 42, 29, 0.06);
-  --dot-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23290044' fill-opacity='0.055'/%3E%3C/svg%3E");
-  --surface: #fffdf8;
-  --surface-2: #e9d9c6;
-  --surface-hover: #dfcdb8;
-  --border: rgba(62, 42, 29, 0.16);
-  --border-strong: rgba(62, 42, 29, 0.34);
-  --text: #3e2a1d;
-  --body: #584130;
-  --muted: #8a705c;
+  --body: #500071;
+  --muted: #500071;
   --accent: #8a2a78;
-  --accent-2: #b7791f;
-  --cta-bg: #3e2a1d;
-  --cta-text: #eee3b0;
+  --accent-text: #fff2ec;
+  --accent-2: #1f06ac;
+  --accent-3: #ff9f1c;
+  --cta-bg: #500071;
+  --cta-text: #ffe5d9;
   --ink: #290044;
-  --plank: #6b4a2f;
-  --plank-edge: #8a5f3c;
+  --edge: rgb(41 0 68 / 0.25);
+  --shelf-back: #ffcad4;
+  --board: #9d8189;
+  --shadow: 0 10px 28px rgb(41 0 68 / 0.18);
+
+  --spine-0: #290044; --spine-1: #500071; --spine-2: #8a2a78; --spine-3: #1f06ac; --spine-4: #0f42c0;
+  --spine-0-fg: #fff2ec; --spine-1-fg: #fff2ec; --spine-2-fg: #fff2ec; --spine-3-fg: #fff2ec; --spine-4-fg: #fff2ec;
+
+  --tag-complex: #5882e8; --tag-time: #eee3b0; --tag-lost: #f4acb7; --tag-moved: #d8e2dc;
 }
 
-/* â”€â”€ paper â€” ink & newsprint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-:root[data-theme='paper'][data-mode='dark'] {
-  --bg: #2c2a31;
-  --bg-dots: rgba(255, 255, 255, 0.05);
-  --dot-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23ffffff' fill-opacity='0.055'/%3E%3C/svg%3E");
-  --surface: #1e1c23;
-  --surface-2: #363340;
-  --surface-hover: #423f4e;
-  --border: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.32);
-  --text: #ede8da;
-  --body: #d5cfc0;
-  --muted: #a39e92;
-  --accent: #5882e8;
-  --accent-2: #f4acb7;
-  --cta-bg: #eee3b0;
-  --cta-text: #1e1c23;
-  --ink: #290044;
-  --plank: #16151b;
-  --plank-edge: #35333d;
+:root[data-theme='indigo'][data-mode='dark'] {
+  color-scheme: dark;
+  --radius: 14px;
+  --ok: #3f9e6a;
+  --glow: #e3ef4f;
+  --dust-rgb: 216 226 220;
+
+  --bg: #0b023c;
+  --surface: #140470;
+  --surface-2: #1c057f;
+  --surface-hover: #220684;
+  --border: rgba(216, 226, 220, 0.16);
+  --border-strong: rgba(216, 226, 220, 0.34);
+  --text: #f3f7f5;
+  --body: #d8e2dc;
+  --muted: #d8e2dc;
+  --accent: #e3ef4f;
+  --accent-text: #0b023c;
+  --accent-2: #5882e8;
+  --accent-3: #ff9f1c;
+  --cta-bg: #e3ef4f;
+  --cta-text: #0b023c;
+  --ink: #0b023c;
+  --edge: rgb(216 226 220 / 0.3);
+  --shelf-back: #07011f;
+  --board: #0f42c0;
+  --shadow: 0 12px 30px rgb(0 0 0 / 0.55);
+
+  --spine-0: #5882e8; --spine-1: #d8e2dc; --spine-2: #9d8189; --spine-3: #f4acb7; --spine-4: #ffcad4;
+  --spine-0-fg: #0b023c; --spine-1-fg: #0b023c; --spine-2-fg: #0b023c; --spine-3-fg: #0b023c; --spine-4-fg: #0b023c;
+
+  --tag-complex: #5882e8; --tag-time: #eee3b0; --tag-lost: #f4acb7; --tag-moved: #d8e2dc;
 }
 
-:root[data-theme='paper'][data-mode='light'] {
-  --bg: #f2efe6;
-  --bg-dots: rgba(20, 20, 20, 0.07);
-  --dot-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ccircle cx='2' cy='2' r='1.4' fill='%23290044' fill-opacity='0.055'/%3E%3C/svg%3E");
-  --surface: #fbfaf6;
-  --surface-2: #e4e0d2;
-  --surface-hover: #d8d4c6;
-  --border: rgba(20, 20, 20, 0.16);
-  --border-strong: rgba(20, 20, 20, 0.36);
-  --text: #141414;
-  --body: #2e2e2e;
-  --muted: #6a6a64;
-  --accent: #1f06ac;
+:root[data-theme='indigo'][data-mode='light'] {
+  color-scheme: light;
+  --radius: 14px;
+  --ok: #3f9e6a;
+  --glow: #e3ef4f;
+  --dust-rgb: 130 140 133;
+
+  --bg: #d8e2dc;
+  --surface: #ecf1ee;
+  --surface-2: #dce7e0;
+  --surface-hover: #ced8d0;
+  --border: rgba(16, 3, 86, 0.18);
+  --border-strong: rgba(16, 3, 86, 0.34);
+  --text: #100356;
+  --body: #1f06ac;
+  --muted: #1f06ac;
+  --accent: #0f42c0;
+  --accent-text: #ffffff;
   --accent-2: #8a2a78;
-  --cta-bg: #141414;
-  --cta-text: #eee3b0;
-  --ink: #290044;
-  --plank: #16151b;
-  --plank-edge: #35333d;
-}
+  --accent-3: #ff9f1c;
+  --cta-bg: #0f42c0;
+  --cta-text: #ffffff;
+  --ink: #100356;
+  --edge: rgb(16 3 86 / 0.25);
+  --shelf-back: #c3d1ca;
+  --board: #5882e8;
+  --shadow: 0 10px 28px rgb(16 3 86 / 0.16);
 
-/* tag colours (pastels) stay usable in every theme */
-:root,
-:root[data-theme='library'] { --tag-complex: #5882e8; --tag-time: #eee3b0; --tag-lost: #f4acb7; --tag-moved: #d8e2dc; }
+  --spine-0: #1f06ac; --spine-1: #0f42c0; --spine-2: #500071; --spine-3: #290044; --spine-4: #8a2a78;
+  --spine-0-fg: #ffffff; --spine-1-fg: #ffffff; --spine-2-fg: #ffffff; --spine-3-fg: #ffffff; --spine-4-fg: #ffffff;
+
+  --tag-complex: #5882e8; --tag-time: #eee3b0; --tag-lost: #f4acb7; --tag-moved: #d8e2dc;
+}
 
 html,
 body,
@@ -145,9 +149,7 @@ body,
 
 body {
   margin: 0;
-  background-color: var(--bg);
-  background-image: var(--dot-svg);
-  background-size: 36px 36px;
+  background: var(--bg);
   color: var(--body);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -156,8 +158,10 @@ body {
 
 /* cross-fade on theme switch */
 .theme-anim,
-.theme-anim * {
-  transition: background-color 0.38s ease, color 0.38s ease, border-color 0.38s ease !important;
+.theme-anim *,
+.theme-anim *::before,
+.theme-anim *::after {
+  transition: background-color 0.38s ease, color 0.38s ease, border-color 0.38s ease, fill 0.38s ease !important;
 }
 
 /* â”€â”€ motion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -273,7 +277,7 @@ body {
   cursor: pointer;
   transition: background 0.18s ease, transform 0.18s cubic-bezier(0.2, 0.75, 0.3, 1);
 }
-.btn-ghost:hover { background: rgba(255, 255, 255, 0.07); transform: translateY(-2px); }
+.btn-ghost:hover { background: rgb(255 255 255 / 0.07); transform: translateY(-2px); }
 .btn-ghost:active { transform: scale(0.96); }
 
 .btn-quiet {
@@ -292,7 +296,7 @@ body {
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--radius);
 }
 
 /* â”€â”€ project cards â€” free, scattered, centred, tilting â”€â”€ */
@@ -303,11 +307,11 @@ body {
   transition: transform 0.28s cubic-bezier(0.2, 0.75, 0.3, 1), box-shadow 0.28s ease;
   animation: fadeUp 0.6s cubic-bezier(0.2, 0.75, 0.3, 1) backwards;
   animation-delay: var(--d, 0s);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow);
 }
 .project-card:hover,
 .project-card:focus-visible {
   z-index: 30;
   transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-14px) scale(1.045);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 18px 42px rgb(0 0 0 / 0.42);
 }
